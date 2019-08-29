@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -68,6 +69,23 @@ namespace Foam {
 			return Arr;
 		}
 
+		public static void WriteStruct<T>(this BinaryWriter Writer, T Val) where T : unmanaged {
+			byte* ValPtr = (byte*)&Val;
+
+			for (int i = 0; i < sizeof(T); i++)
+				Writer.Write(ValPtr[i]);
+		}
+
+		public static T ReadStruct<T>(this BinaryReader Reader) where T : unmanaged {
+			T Val;
+			byte* ValPtr = (byte*)&Val;
+
+			for (int i = 0; i < sizeof(T); i++)
+				ValPtr[i] = Reader.ReadByte();
+
+			return Val;
+		}
+
 		public static byte[] ToByteArray(byte* Ptr, int Len) {
 			byte[] Bytes = new byte[Len];
 
@@ -75,6 +93,23 @@ namespace Foam {
 				Bytes[i] = Ptr[i];
 
 			return Bytes;
+		}
+
+		public static void Append<T>(ref T[] Arr, T Val) where T : struct {
+			if (Arr == null)
+				Arr = new T[0];
+
+			int NewLen = Arr.Length + 1;
+			Array.Resize(ref Arr, NewLen);
+			Arr[NewLen - 1] = Val;
+		}
+
+		public static float Max(Vector3 V) {
+			return Math.Max(Math.Max(V.X, V.Y), V.Z);
+		}
+
+		public static float Min(Vector3 V) {
+			return Math.Min(Math.Min(V.X, V.Y), V.Z);
 		}
 	}
 }
