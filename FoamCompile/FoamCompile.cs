@@ -47,17 +47,15 @@ namespace FoamCompile {
 			string FileName = Path.GetFileNameWithoutExtension(FilePath);
 			string RootDir = Path.GetDirectoryName(FilePath);
 
-			FoamMesh[] Msh = Load(FilePath);
-
-			FoamModel Foam = new FoamModel(FileName, FoamFlags.Static, Msh);
+			FoamModel Foam = Load(FilePath);
 			Foam.SaveToFile(Path.Combine(RootDir, FileName + ".foam"));
 		}
 
-		static FoamMesh[] Load(string FileName) {
+		static FoamModel Load(string FileName) {
 			if (Importer == null) {
 				Importer = new AssimpContext();
 				Importer.SetConfig(new MD3HandleMultiPartConfig(false));
-				Importer.SetConfig(new MD5NoAnimationAutoLoadConfig(true));
+				//Importer.SetConfig(new MD5NoAnimationAutoLoadConfig(true));
 				Importer.SetConfig(new VertexBoneWeightLimitConfig(4));
 			}
 
@@ -65,6 +63,9 @@ namespace FoamCompile {
 			ProcessSteps |= PostProcessSteps.SplitLargeMeshes;
 			ProcessSteps |= PostProcessSteps.OptimizeMeshes;
 			ProcessSteps |= PostProcessSteps.LimitBoneWeights;
+			ProcessSteps |= PostProcessSteps.JoinIdenticalVertices;
+			ProcessSteps |= PostProcessSteps.ImproveCacheLocality;
+			ProcessSteps |= PostProcessSteps.GenerateNormals;
 
 			Scene Sc = Importer.ImportFile(FileName, ProcessSteps);
 
@@ -86,7 +87,9 @@ namespace FoamCompile {
 				MaterialList.Add(FoamMat);
 			}
 
+			FoamBone[] Bones = new FoamBone[0];
 			List<FoamMesh> MeshList = new List<FoamMesh>();
+
 			foreach (var Msh in Sc.Meshes) {
 				Vector3D[] Verts = Msh.Vertices.ToArray();
 				Vector3D[] UVs = Msh.TextureCoordinateChannels[0].ToArray();
@@ -111,20 +114,40 @@ namespace FoamCompile {
 						FoamIndices.Add((ushort)FaceIndex);
 
 				FoamBoneInfo[] BoneInfo = null;
-				FoamBone[] Bones = null;
 
 				if (Msh.BoneCount != 0) {
 					BoneInfo = new FoamBoneInfo[FoamVertices.Length];
 					Bone[] OrigBones = Msh.Bones.ToArray();
-					Bones = new FoamBone[OrigBones.Length];
 
-					for (int i = 0; i < OrigBones.Length; i++)
-						Bones[i] = new FoamBone(OrigBones[i].Name, ConvertMatrix(OrigBones[i].OffsetMatrix));
+					// Convert bones
+					for (int i = 0; i < OrigBones.Length; i++) {
+						if (!ContainsBoneNamed(Bones, OrigBones[i].Name))
+							Utils.Append(ref Bones, new FoamBone(OrigBones[i].Name, -1, ConvertMatrix(OrigBones[i].OffsetMatrix)));
+					}
 
+					/*// Assign parents
+					Node[] NodeHierarchy = Flatten(Sc.RootNode);
+					Node RootNode = FindRoot(FindNode(NodeHierarchy, Bones[0].Name), Bones);
+					Utils.Append(ref Bones, new FoamBone(RootNode.Name, -1, NumMatrix4x4.Identity));
+
+					for (int i = 0; i < Bones.Length; i++) {
+						Node BoneNode = FindNode(NodeHierarchy, Bones[i].Name);
+						int BoneIndex = FindBoneIndex(Bones, BoneNode.Parent.Name);
+
+						if (BoneNode != RootNode)
+							if (BoneIndex == -1)
+								throw new Exception("Could not find a bone");
+
+						Bones[i].BindMatrix = ConvertMatrix(BoneNode.Transform);
+						Bones[i].ParentBoneIndex = BoneIndex;
+					}*/
+
+					// Convert vertex bone information
 					for (int i = 0; i < BoneInfo.Length; i++) {
 						FindWeightsFor(OrigBones, i, out VertexWeight[] Weights, out int[] VertexBones);
 
 						FoamBoneInfo BInfo = new FoamBoneInfo();
+
 						BInfo.Bone1 = VertexBones[0];
 						BInfo.Bone2 = VertexBones[1];
 						BInfo.Bone3 = VertexBones[2];
@@ -139,10 +162,44 @@ namespace FoamCompile {
 					}
 				}
 
-				MeshList.Add(new FoamMesh(FoamVertices, FoamIndices?.ToArray() ?? null, BoneInfo, Bones, MeshName, Material));
+				MeshList.Add(new FoamMesh(FoamVertices, FoamIndices?.ToArray() ?? null, BoneInfo, MeshName, Material));
 			}
 
-			return MeshList.ToArray();
+			if (Bones.Length > 0) {
+				Node[] NodeHierarchy = Flatten(Sc.RootNode);
+				Node RootNode = FindRoot(FindNode(NodeHierarchy, Bones[0].Name), Bones);
+				Utils.Prepend(ref Bones, new FoamBone(RootNode.Name, -1, NumMatrix4x4.Identity));
+
+				for (int i = 0; i < Bones.Length; i++) {
+					Node BoneNode = FindNode(NodeHierarchy, Bones[i].Name);
+					int BoneIndex = FindBoneIndex(Bones, BoneNode.Parent.Name);
+
+					if (BoneNode != RootNode)
+						if (BoneIndex == -1)
+							throw new Exception("Could not find a bone");
+
+					Bones[i].BindMatrix = ConvertMatrix(BoneNode.Transform);
+					Bones[i].ParentBoneIndex = BoneIndex;
+				}
+			} else
+				Bones = null;
+
+			// Animations
+			FoamAnimation[] Animations = null;
+
+			foreach (var Anim in Sc.Animations) {
+				string[] BoneNames = Anim.NodeAnimationChannels.Select(C => C.NodeName).ToArray();
+				int FrameCount = Anim.NodeAnimationChannels[0].PositionKeyCount;
+				FoamAnimationFrame[] Frames = new FoamAnimationFrame[FrameCount];
+
+				for (int i = 0; i < FrameCount; i++)
+					Frames[i] = ReadFrame(Anim.NodeAnimationChannels, BoneNames, i);
+
+				FoamAnimation Animation = new FoamAnimation(Anim.Name, Frames, BoneNames);
+				Utils.Append(ref Animations, Animation);
+			}
+
+			return new FoamModel(Path.GetFileNameWithoutExtension(FileName), FoamFlags.Model, MeshList.ToArray(), Bones, Animations);
 		}
 
 		static void FindWeightsFor(Bone[] Bones, int VertexID, out VertexWeight[] Weights, out int[] VertexBones) {
@@ -165,8 +222,99 @@ namespace FoamCompile {
 			Weights = WeightsList.ToArray();
 		}
 
+		static FoamAnimationFrame ReadFrame(List<NodeAnimationChannel> Channels, string[] BoneNames, int Frame) {
+			NumMatrix4x4[] BoneTransforms = new NumMatrix4x4[BoneNames.Length];
+
+			for (int i = 0; i < BoneNames.Length; i++) {
+				NodeAnimationChannel Ch = FindBoneChannel(Channels, BoneNames[i]);
+				BoneTransforms[i] = GetTransformForFrame(Ch, Frame);
+			}
+
+			return new FoamAnimationFrame(BoneTransforms);
+		}
+
+		static NodeAnimationChannel FindBoneChannel(List<NodeAnimationChannel> Channels, string Name) {
+			foreach (var C in Channels)
+				if (C.NodeName == Name)
+					return C;
+
+			throw new Exception("Could not find bone channel " + Name);
+		}
+
+		static NumMatrix4x4 GetTransformForFrame(NodeAnimationChannel Ch, int Frame) {
+			VectorKey PosKey = Ch.PositionKeys[Ch.PositionKeys.Count - 1];
+			if (Frame < Ch.PositionKeys.Count)
+				PosKey = Ch.PositionKeys[Frame];
+
+			QuaternionKey RotKey = Ch.RotationKeys[Ch.RotationKeys.Count - 1];
+			if (Frame < Ch.RotationKeys.Count)
+				RotKey = Ch.RotationKeys[Frame];
+
+			VectorKey SclKey = Ch.ScalingKeys[Ch.ScalingKeys.Count - 1];
+			if (Frame < Ch.ScalingKeys.Count)
+				SclKey = Ch.ScalingKeys[Frame];
+
+
+			NumMatrix4x4 Rot = NumMatrix4x4.CreateFromQuaternion(ConvertQuat(RotKey.Value));
+			NumMatrix4x4 Pos = NumMatrix4x4.CreateTranslation(ConvertVec(PosKey.Value));
+			NumMatrix4x4 Scl = NumMatrix4x4.CreateScale(ConvertVec(SclKey.Value));
+
+			//return Pos * Rot * Scl;
+			return Scl * Rot * Pos;
+		}
+
 		static NumMatrix4x4 ConvertMatrix(AssMatrix4x4 Mat) {
 			return *(NumMatrix4x4*)&Mat;
+		}
+
+		static System.Numerics.Quaternion ConvertQuat(Assimp.Quaternion Q) {
+			return new System.Numerics.Quaternion(Q.X, Q.Y, Q.Z, Q.W);
+		}
+
+		static Vector3 ConvertVec(Vector3D V) {
+			return new Vector3(V.X, V.Y, V.Z);
+		}
+
+		static int FindBoneIndex(FoamBone[] Bones, string Name) {
+			for (int i = 0; i < Bones.Length; i++)
+				if (Bones[i].Name == Name)
+					return i;
+
+			return -1;
+			//throw new Exception("Bone not found " + Name);
+		}
+
+		static bool ContainsBoneNamed(FoamBone[] Bones, string Name) {
+			foreach (var B in Bones)
+				if (B.Name == Name)
+					return true;
+
+			return false;
+		}
+
+		static Node FindRoot(Node Node, FoamBone[] Bones) {
+			if (FindBoneIndex(Bones, Node.Name) == -1)
+				return Node;
+
+			return FindRoot(Node.Parent, Bones);
+		}
+
+		static Node FindNode(Node[] Nodes, string Name) {
+			for (int i = 0; i < Nodes.Length; i++)
+				if (Nodes[i].Name == Name)
+					return Nodes[i];
+
+			return null;
+		}
+
+		static Node[] Flatten(Node RootNode) {
+			List<Node> Nodes = new List<Node>();
+			Nodes.Add(RootNode);
+
+			foreach (var C in RootNode.Children)
+				Nodes.AddRange(Flatten(C));
+
+			return Nodes.ToArray();
 		}
 
 		static void AddTextureIfExists(bool Exists, ref FoamMaterial FoamMat, TextureSlot Texture, FoamTextureType TexType) {

@@ -140,7 +140,7 @@
     <Content Include="models\md3\watercan\water_can.tga">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="models\md5\bob_lamp\bob_body.tga">
+    <Content Include="models\md5\bob_lamp\bob_body_d.tga">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="models\md5\bob_lamp\bob_body_h.tga">
@@ -152,7 +152,7 @@
     <Content Include="models\md5\bob_lamp\bob_body_s.tga">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="models\md5\bob_lamp\bob_head.tga">
+    <Content Include="models\md5\bob_lamp\bob_head_d.tga">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="models\md5\bob_lamp\bob_head_h.tga">
@@ -164,7 +164,7 @@
     <Content Include="models\md5\bob_lamp\bob_head_s.tga">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="models\md5\bob_lamp\bob_helmet.tga">
+    <Content Include="models\md5\bob_lamp\bob_helmet_d.tga">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="models\md5\bob_lamp\bob_helmet_h.tga">
@@ -176,7 +176,7 @@
     <Content Include="models\md5\bob_lamp\bob_helmet_s.tga">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="models\md5\bob_lamp\lantern.tga">
+    <Content Include="models\md5\bob_lamp\lantern_d.tga">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="models\md5\bob_lamp\lantern_h.tga">
@@ -185,7 +185,7 @@
     <Content Include="models\md5\bob_lamp\lantern_local.tga">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="models\md5\bob_lamp\lantern_top.tga">
+    <Content Include="models\md5\bob_lamp\lantern_top_d.tga">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="models\md5\bob_lamp\lantern_top_h.tga">

@@ -95,13 +95,26 @@ namespace Foam {
 			return Bytes;
 		}
 
-		public static void Append<T>(ref T[] Arr, T Val) where T : struct {
+		public static void Append<T>(ref T[] Arr, T Val) {
 			if (Arr == null)
 				Arr = new T[0];
 
 			int NewLen = Arr.Length + 1;
 			Array.Resize(ref Arr, NewLen);
 			Arr[NewLen - 1] = Val;
+		}
+
+		public static void Prepend<T>(ref T[] Arr, T Val) {
+			if (Arr == null)
+				Arr = new T[0];
+
+			int NewLen = Arr.Length + 1;
+			Array.Resize(ref Arr, NewLen);
+
+			for (int i = NewLen - 1; i >= 1; i--)
+				Arr[i] = Arr[i - 1];
+
+			Arr[0] = Val;
 		}
 
 		public static float Max(Vector3 V) {

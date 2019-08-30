@@ -13,13 +13,78 @@ namespace Foam {
 		void Read(BinaryReader Reader);
 	}
 
+	public struct FoamAnimationFrame : IFoam {
+		public Matrix4x4[] BoneTransforms;
+
+		public FoamAnimationFrame(Matrix4x4[] BoneTransforms) {
+			this.BoneTransforms = BoneTransforms;
+		}
+
+		public void Read(BinaryReader Reader) {
+			BoneTransforms = Reader.ReadStructArray<Matrix4x4>();
+		}
+
+		public void Write(BinaryWriter Writer) {
+			Writer.WriteStructArray(BoneTransforms);
+		}
+	}
+
+	public class FoamAnimation : IFoam {
+		public string Name;
+		public string[] BoneNames;
+		public FoamAnimationFrame[] Frames;
+
+		public FoamAnimation() {
+		}
+
+		public FoamAnimation(string Name, FoamAnimationFrame[] Frames, string[] BoneNames) {
+			this.Name = Name;
+			this.BoneNames = BoneNames;
+			this.Frames = Frames;
+		}
+
+		public Matrix4x4 FindBoneTransform(string BoneName, int Frame) {
+			for (int i = 0; i < BoneNames.Length; i++)
+				if (BoneNames[i] == BoneName)
+					return Frames[Frame].BoneTransforms[i];
+
+			throw new Exception("Bone not found " + BoneName);
+		}
+
+		public void Read(BinaryReader Reader) {
+			Name = Reader.ReadUTF8String();
+
+			BoneNames = new string[Reader.ReadInt32()];
+			for (int i = 0; i < BoneNames.Length; i++)
+				BoneNames[i] = Reader.ReadUTF8String();
+
+			Frames = new FoamAnimationFrame[Reader.ReadInt32()];
+			for (int i = 0; i < Frames.Length; i++)
+				Frames[i].Read(Reader);
+		}
+
+		public void Write(BinaryWriter Writer) {
+			Writer.WriteUTF8String(Name);
+
+			Writer.Write(BoneNames.Length);
+			for (int i = 0; i < BoneNames.Length; i++)
+				Writer.WriteUTF8String(BoneNames[i]);
+
+			Writer.Write(Frames.Length);
+			for (int i = 0; i < Frames.Length; i++)
+				Frames[i].Write(Writer);
+		}
+	}
+
 	[StructLayout(LayoutKind.Sequential, Pack = 1)]
 	public struct FoamBone : IFoam {
 		public string Name;
+		public int ParentBoneIndex;
 		public Matrix4x4 BindMatrix;
 
-		public FoamBone(string Name, Matrix4x4 BindMatrix) {
+		public FoamBone(string Name, int ParentBoneIndex, Matrix4x4 BindMatrix) {
 			this.Name = Name;
+			this.ParentBoneIndex = ParentBoneIndex;
 			this.BindMatrix = BindMatrix;
 		}
 
@@ -29,11 +94,13 @@ namespace Foam {
 
 		public void Read(BinaryReader Reader) {
 			Name = Reader.ReadUTF8String();
+			ParentBoneIndex = Reader.ReadInt32();
 			BindMatrix = Reader.ReadStruct<Matrix4x4>();
 		}
 
 		public void Write(BinaryWriter Writer) {
 			Writer.WriteUTF8String(Name);
+			Writer.Write(ParentBoneIndex);
 			Writer.WriteStruct(BindMatrix);
 		}
 	}
@@ -137,9 +204,7 @@ namespace Foam {
 	public unsafe class FoamMesh : IFoam {
 		public FoamVertex3[] Vertices;
 		public ushort[] Indices;
-
 		public FoamBoneInfo[] BoneInformation;
-		public FoamBone[] Bones;
 
 		public string MeshName;
 		public FoamMaterial Material;
@@ -147,12 +212,11 @@ namespace Foam {
 		public FoamMesh() {
 		}
 
-		public FoamMesh(FoamVertex3[] Vertices, ushort[] Indices, FoamBoneInfo[] BoneInformation, FoamBone[] Bones, string MeshName, FoamMaterial Material) : this() {
+		public FoamMesh(FoamVertex3[] Vertices, ushort[] Indices, FoamBoneInfo[] BoneInformation, string MeshName, FoamMaterial Material) : this() {
 			this.Vertices = Vertices;
 			this.Indices = Indices;
 
 			this.BoneInformation = BoneInformation;
-			this.Bones = Bones;
 
 			this.MeshName = MeshName;
 			this.Material = Material;
@@ -196,13 +260,6 @@ namespace Foam {
 			else
 				Writer.Write(0);
 
-			if (Bones != null) {
-				Writer.Write(Bones.Length);
-				for (int i = 0; i < Bones.Length; i++)
-					Bones[i].Write(Writer);
-			} else
-				Writer.Write(0);
-
 			Writer.WriteUTF8String(MeshName);
 			Material.Write(Writer);
 		}
@@ -216,12 +273,6 @@ namespace Foam {
 			BoneInformation = Reader.ReadStructArray<FoamBoneInfo>();
 			if (BoneInformation.Length == 0)
 				BoneInformation = null;
-
-			Bones = new FoamBone[Reader.ReadInt32()];
-			for (int i = 0; i < Bones.Length; i++)
-				Bones[i].Read(Reader);
-			if (Bones.Length == 0)
-				Bones = null;
 
 			MeshName = Reader.ReadUTF8String();
 			Material.Read(Reader);
@@ -272,27 +323,36 @@ namespace Foam {
 
 	[Flags]
 	public enum FoamFlags : int {
-		Static,
-		Animated,
+		Model,
+		ModelAnimations,
 		Level,
 	}
 
 	[StructLayout(LayoutKind.Sequential, Pack = 1)]
-	public struct FoamModel {
+	public class FoamModel {
 		const int MAGIC = 0x6D616F46;
+		const int VERSION = 1;
 
 		public int Magic;
 		public int Version;
 		public string Name;
 		public FoamFlags Flags;
-		public FoamMesh[] Meshes;
 
-		public FoamModel(string Name, FoamFlags Flags, FoamMesh[] Meshes) {
+		public FoamMesh[] Meshes;
+		public FoamBone[] Bones;
+		public FoamAnimation[] Animations;
+
+		public FoamModel() {
+		}
+
+		public FoamModel(string Name, FoamFlags Flags, FoamMesh[] Meshes, FoamBone[] Bones, FoamAnimation[] Animations) {
 			Magic = MAGIC;
-			Version = 1;
+			Version = VERSION;
 			this.Name = Name;
 			this.Flags = Flags;
 			this.Meshes = Meshes;
+			this.Bones = Bones;
+			this.Animations = Animations;
 		}
 
 		public void Write(BinaryWriter Writer) {
@@ -304,11 +364,33 @@ namespace Foam {
 			Writer.Write(Meshes.Length);
 			for (int i = 0; i < Meshes.Length; i++)
 				Meshes[i].Write(Writer);
+
+			// Bones
+			if (Bones != null) {
+				Writer.Write(Bones.Length);
+				for (int i = 0; i < Bones.Length; i++)
+					Bones[i].Write(Writer);
+			} else
+				Writer.Write(0);
+
+			// Animations
+			if (Animations != null) {
+				Writer.Write(Animations.Length);
+				for (int i = 0; i < Animations.Length; i++)
+					Animations[i].Write(Writer);
+			} else
+				Writer.Write(0);
 		}
 
 		public void Read(BinaryReader Reader) {
 			Magic = Reader.ReadInt32();
+			if (Magic != MAGIC)
+				throw new Exception("Invalid foam file ");
+
 			Version = Reader.ReadInt32();
+			if (Version != VERSION)
+				throw new Exception("Unsupported foam version " + Version);
+
 			Name = Reader.ReadUTF8String();
 			Flags = (FoamFlags)Reader.ReadInt32();
 
@@ -319,6 +401,22 @@ namespace Foam {
 				Meshes[i] = new FoamMesh();
 				Meshes[i].Read(Reader);
 			}
+
+			// Bones
+			Bones = new FoamBone[Reader.ReadInt32()];
+			for (int i = 0; i < Bones.Length; i++)
+				Bones[i].Read(Reader);
+			if (Bones.Length == 0)
+				Bones = null;
+
+			// Animations
+			Animations = new FoamAnimation[Reader.ReadInt32()];
+			for (int i = 0; i < Animations.Length; i++) {
+				Animations[i] = new FoamAnimation();
+				Animations[i].Read(Reader);
+			}
+			if (Animations.Length == 0)
+				Animations = null;
 		}
 
 		public void CalcBounds(out Vector3 Min, out Vector3 Max) {
@@ -344,9 +442,6 @@ namespace Foam {
 			using (FileStream FS = File.OpenRead(FileName))
 			using (BinaryReader Reader = new BinaryReader(FS))
 				Header.Read(Reader);
-
-			if (Header.Magic != MAGIC)
-				throw new Exception("Invalid foam file " + FileName);
 
 			return Header;
 		}
