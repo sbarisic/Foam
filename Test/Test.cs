@@ -2,10 +2,12 @@
 using RaylibSharp;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Test {
@@ -62,6 +64,8 @@ namespace Test {
 			Model Mdl = Raylib.LoadModelFromMesh(RaylibMesh);
 			Mdl.transform = Matrix4x4.CreateFromYawPitchRoll(0, Pi / 2, 0);
 
+			Mesh.Userdata = Mdl;
+
 			if (Mesh.Material.FindTexture(FoamTextureType.Diffuse, out FoamTexture Tex))
 				SetTexture(Mdl, Path.Combine(RootDir, Tex.Name));
 
@@ -86,43 +90,107 @@ namespace Test {
 			return null;
 		}
 
-		static Matrix4x4 GetWorldTrans(FoamModel Mdl, int AnimIndex, int FrameIndex, int BoneIndex) {
-			FoamBone CurBone = Mdl.Bones[BoneIndex];
-
-			Matrix4x4 ParentTrans = Matrix4x4.CreateFromYawPitchRoll(0, -Pi / 2, 0);
-			if (CurBone.ParentBoneIndex != -1)
-				ParentTrans = GetWorldTrans(Mdl, AnimIndex, FrameIndex, CurBone.ParentBoneIndex);
-
-			return Mdl.Animations[AnimIndex].FindBoneTransform(CurBone.Name, FrameIndex) * ParentTrans;
-		}
-
 		static int FrameIndex = 0;
+		static Stopwatch AnimStopwatch = null;
+
 		static void DrawBones(FoamModel Mdl) {
-			FoamAnimation Anim = Mdl.Animations[0];
+			if (Mdl.Animations != null) {
+				FoamAnimation Anim = Mdl.Animations[0];
+				int Frames = Anim.Frames.Length;
+				float SecondsPerFrame = (Anim.DurationInTicks / Anim.TicksPerSecond) / Frames;
 
-			FrameIndex++;
+				if (AnimStopwatch == null)
+					AnimStopwatch = Stopwatch.StartNew();
 
-			if (FrameIndex >= Anim.Frames.Length)
-				FrameIndex = 0;
+				if ((AnimStopwatch.ElapsedMilliseconds / 1000.0f) >= SecondsPerFrame) {
+					FrameIndex++;
 
-			if (WorldTexts == null || WorldTexts.Length != Mdl.Bones.Length)
+					if (FrameIndex >= Anim.Frames.Length)
+						FrameIndex = 0;
+
+					UpdateModel(Mdl, FrameIndex);
+
+					AnimStopwatch.Restart();
+				}
+			}
+
+			if (Mdl.Bones == null)
+				return;
+
+			if (WorldTexts == null || WorldTexts.Length != Mdl.Bones.Length) {
 				WorldTexts = new KeyValuePair<Vector2, string>[Mdl.Bones.Length];
+				for (int i = 0; i < WorldTexts.Length; i++)
+					WorldTexts[i] = new KeyValuePair<Vector2, string>(new Vector2(0, 0), "null");
+			}
+
+			Matrix4x4 ParentRotMat = Matrix4x4.CreateFromYawPitchRoll(0, -Pi / 2, 0);
 
 			for (int i = 0; i < Mdl.Bones.Length; i++) {
 				FoamBone Bone = Mdl.Bones[i];
 
-				Matrix4x4 ParentWorld = Matrix4x4.Identity;
+
+				if (Mdl.Animations != null) {
+					// Actual bones
+					Matrix4x4 ParentWorld = Matrix4x4.Identity;
+					if (Bone.ParentBoneIndex != -1)
+						ParentWorld = Mdl.CalcWorldTransform(0, FrameIndex, Bone.ParentBoneIndex) * ParentRotMat;
+					Matrix4x4.Decompose(ParentWorld, out Vector3 ParentScale, out Quaternion ParentRot, out Vector3 ParentPos);
+
+					Matrix4x4 World = Mdl.CalcWorldTransform(0, FrameIndex, i) * ParentRotMat;
+					Matrix4x4.Decompose(World, out Vector3 Scale, out Quaternion Rot, out Vector3 Pos);
+
+					Raylib.DrawLine3D(ParentPos, Pos, Color.Red);
+
+					// Text
+					Vector3 Center = (Pos + ParentPos) / 2;
+					WorldTexts[i] = new KeyValuePair<Vector2, string>(Raylib.GetWorldToScreen(Center, Cam3D), Bone.Name);
+				}
+
+				/*// Bind pose bones
+				Matrix4x4 BindParentWorld = Matrix4x4.Identity;
 				if (Bone.ParentBoneIndex != -1)
-					ParentWorld = GetWorldTrans(Mdl, 0, FrameIndex, Bone.ParentBoneIndex);
-				Matrix4x4.Decompose(ParentWorld, out Vector3 ParentScale, out Quaternion ParentRot, out Vector3 ParentPos);
+					BindParentWorld = Mdl.Bones[Bone.ParentBoneIndex].BindMatrix;
+				Matrix4x4.Decompose(BindParentWorld, out Vector3 BindParentScale, out Quaternion BindParentRot, out Vector3 BindParentPos);
 
-				Matrix4x4 World = GetWorldTrans(Mdl, 0, FrameIndex, i);
-				Matrix4x4.Decompose(World, out Vector3 Scale, out Quaternion Rot, out Vector3 Pos);
+				Matrix4x4 BindWorld = Mdl.Bones[i].BindMatrix;
+				Matrix4x4.Decompose(BindWorld, out Vector3 BindScale, out Quaternion BindRot, out Vector3 BindPos);
 
-				Vector3 Center = (Pos + ParentPos) / 2;
-				WorldTexts[i] = new KeyValuePair<Vector2, string>(Raylib.GetWorldToScreen(Center, Cam3D), Bone.Name);
+				Raylib.DrawLine3D(BindParentPos, BindPos, Color.Green);
+				*/
+			}
+		}
 
-				Raylib.DrawLine3D(ParentPos, Pos, Color.Red);
+
+
+
+
+		static void UpdateModel(FoamModel Model, int FrameIndex) {
+			if (Model.Animations == null)
+				return;
+
+			foreach (var Msh in Model.Meshes) {
+				List<Vertex3> Verts = new List<Vertex3>();
+				if (Msh.BoneInformation == null)
+					continue;
+
+				foreach (var Index in Msh.Indices) {
+					FoamVertex3 Vert = Msh.Vertices[Index];
+					FoamBoneInfo Info = Msh.BoneInformation[Index];
+					Vector3 Pos = Vector3.Zero;
+
+					Matrix4x4 WorldTrans = Model.CalcWorldTransform(0, FrameIndex, Info.Bone1);
+					Matrix4x4.Decompose(WorldTrans, out Vector3 _S, out Quaternion Rot, out Vector3 Trans);
+
+					//Pos = Vert.Position;
+					Pos = Vector3.Transform(Vert.Position, WorldTrans);
+
+
+					Verts.Add(new Vertex3(Pos, new Vector2(Vert.UV.X, 1 - Vert.UV.Y)));
+				}
+
+				Mesh* RayMesh = ((Model)Msh.Userdata).meshes;
+				Raylib.UnloadMesh(*RayMesh);
+				*RayMesh = Raylib.GenMeshRaw(Verts.ToArray());
 			}
 		}
 
@@ -139,19 +207,32 @@ namespace Test {
 			Model[] Models = null;
 			FoamModel FoamModel = null;
 
+
 			while (!Raylib.WindowShouldClose()) {
 				if (Raylib.IsFileDropped()) {
-					if (Models != null) {
-						foreach (var M in Models)
-							Raylib.UnloadModel(M);
-					}
+					Model[] NewModels = LoadModels(Raylib.GetDroppedFiles()[0], out float Scale, out FoamModel NewFoamModel);
 
-					Models = LoadModels(Raylib.GetDroppedFiles()[0], out float Scale, out FoamModel);
-					Cam3D.position = new Vector3(0.5f, 0.25f, 0.5f) * Scale;
-					Cam3D.target = new Vector3(0, 0.25f, 0) * Scale;
+					if (NewModels.Length == 0 && NewFoamModel.Animations != null && FoamModel != null) {
+						foreach (var NewAnim in NewFoamModel.Animations)
+							Utils.Append(ref FoamModel.Animations, NewAnim);
+					} else {
+						if (Models != null) {
+							foreach (var M in Models)
+								Raylib.UnloadModel(M);
+						}
+
+						Models = NewModels;
+						FoamModel = NewFoamModel;
+
+						Cam3D.position = new Vector3(0.5f, 0.25f, 0.5f) * Scale;
+						Cam3D.target = new Vector3(0, 0.25f, 0) * Scale;
+					}
 
 					Raylib.ClearDroppedFiles();
 				}
+
+				/*if (Models != null)
+					UpdateModel(FoamModel, FrameIndex);*/
 
 				Raylib.BeginDrawing();
 				Raylib.ClearBackground(new Color(50, 50, 50));
@@ -160,17 +241,18 @@ namespace Test {
 					Raylib.UpdateCamera(ref Cam3D);
 					Raylib.BeginMode3D(Cam3D);
 
+
 					for (int i = 0; i < Models.Length; i++)
 						Raylib.DrawModelWires(Models[i], Vector3.Zero, 1, Color.White);
-					//Raylib.DrawModel(Models[i], Vector3.Zero, 1, Color.White);
 
 					if (FoamModel != null)
 						DrawBones(FoamModel);
 
 					Raylib.EndMode3D();
 
-					foreach (var KV in WorldTexts)
-						Raylib.DrawText(KV.Value, (int)KV.Key.X, (int)KV.Key.Y, 14, Color.White);
+					if (WorldTexts != null)
+						foreach (var KV in WorldTexts)
+							Raylib.DrawText(KV.Value, (int)KV.Key.X, (int)KV.Key.Y, 12, Color.White);
 				}
 
 				Raylib.DrawFPS(10, 10);

@@ -34,13 +34,18 @@ namespace Foam {
 		public string[] BoneNames;
 		public FoamAnimationFrame[] Frames;
 
+		public float DurationInTicks;
+		public float TicksPerSecond;
+
 		public FoamAnimation() {
 		}
 
-		public FoamAnimation(string Name, FoamAnimationFrame[] Frames, string[] BoneNames) {
+		public FoamAnimation(string Name, FoamAnimationFrame[] Frames, string[] BoneNames, float DurationInTicks, float TicksPerSecond) {
 			this.Name = Name;
 			this.BoneNames = BoneNames;
 			this.Frames = Frames;
+			this.DurationInTicks = DurationInTicks;
+			this.TicksPerSecond = TicksPerSecond;
 		}
 
 		public Matrix4x4 FindBoneTransform(string BoneName, int Frame) {
@@ -61,6 +66,9 @@ namespace Foam {
 			Frames = new FoamAnimationFrame[Reader.ReadInt32()];
 			for (int i = 0; i < Frames.Length; i++)
 				Frames[i].Read(Reader);
+
+			DurationInTicks = Reader.ReadSingle();
+			TicksPerSecond = Reader.ReadSingle();
 		}
 
 		public void Write(BinaryWriter Writer) {
@@ -73,6 +81,9 @@ namespace Foam {
 			Writer.Write(Frames.Length);
 			for (int i = 0; i < Frames.Length; i++)
 				Frames[i].Write(Writer);
+
+			Writer.Write(DurationInTicks);
+			Writer.Write(TicksPerSecond);
 		}
 	}
 
@@ -209,6 +220,9 @@ namespace Foam {
 		public string MeshName;
 		public FoamMaterial Material;
 
+		// Not serialized
+		public object Userdata;
+
 		public FoamMesh() {
 		}
 
@@ -293,6 +307,9 @@ namespace Foam {
 			this.G = G;
 			this.B = B;
 			this.A = A;
+		}
+
+		public FoamColor(float R, float G, float B, float A) : this((byte)(R * 255), (byte)(G * 255), (byte)(B * 255), (byte)(A * 255)) {
 		}
 
 		public FoamColor(byte R, byte G, byte B) : this(R, G, B, 255) {
@@ -428,6 +445,16 @@ namespace Foam {
 				Min = Vector3.Min(Min, MeshMin);
 				Max = Vector3.Max(Max, MeshMax);
 			}
+		}
+
+		public Matrix4x4 CalcWorldTransform(int AnimIndex, int FrameIndex, int BoneIndex) {
+			FoamBone CurBone = Bones[BoneIndex];
+
+			Matrix4x4 ParentTrans = Matrix4x4.Identity;
+			if (CurBone.ParentBoneIndex != -1)
+				ParentTrans = CalcWorldTransform(AnimIndex, FrameIndex, CurBone.ParentBoneIndex);
+
+			return Animations[AnimIndex].FindBoneTransform(CurBone.Name, FrameIndex) * ParentTrans;
 		}
 
 		public void SaveToFile(string FileName) {

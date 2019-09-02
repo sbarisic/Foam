@@ -21,7 +21,10 @@ namespace FoamCompile {
 
 			//string[] InputFiles = Directory.GetFiles("C:/Projekti/Foam/pak0/models", "*.md3", SearchOption.AllDirectories);
 			//string[] InputFiles = { "models/fbx/scotty/scotty.fbx" };
-			string[] InputFiles = { "models/md5/bob_lamp/bob_lamp_update.md5mesh" };
+			//string[] InputFiles = { "models/md5/bob_lamp/bob_lamp_update.md5mesh" };
+			//string[] InputFiles = { "models/blend/gladiator/Gladiator.blend" };
+
+			string[] InputFiles = { "models/fbx/anitest/ThirdPersonRun.FBX", "models/fbx/anitest/mainani/SK_Mannequin.FBX" };
 
 			foreach (var F in InputFiles) {
 				Console.WriteLine("Converting " + F);
@@ -66,6 +69,8 @@ namespace FoamCompile {
 			ProcessSteps |= PostProcessSteps.JoinIdenticalVertices;
 			ProcessSteps |= PostProcessSteps.ImproveCacheLocality;
 			ProcessSteps |= PostProcessSteps.GenerateNormals;
+			ProcessSteps |= PostProcessSteps.GenerateUVCoords;
+
 
 			Scene Sc = Importer.ImportFile(FileName, ProcessSteps);
 
@@ -92,26 +97,58 @@ namespace FoamCompile {
 
 			foreach (var Msh in Sc.Meshes) {
 				Vector3D[] Verts = Msh.Vertices.ToArray();
-				Vector3D[] UVs = Msh.TextureCoordinateChannels[0].ToArray();
+				Vector3D[] UVs1 = Msh.TextureCoordinateChannels[0].ToArray();
+				Vector3D[] UVs2 = Msh.TextureCoordinateChannels[1].ToArray();
+				Vector3D[] Normals = Msh.Normals.ToArray();
+				Vector3D[] Tangents = Msh.Tangents.ToArray();
+				Color4D[] Colors = Msh.VertexColorChannels[0].ToArray();
 
 				string MeshName = Msh.Name;
 				FoamMaterial Material = MaterialList[Msh.MaterialIndex];
 
 				FoamVertex3[] FoamVertices = new FoamVertex3[Verts.Length];
 				for (int i = 0; i < FoamVertices.Length; i++) {
-					Vector2 UV = Vector2.Zero;
+					Vector2 UV1 = UVs1.Length != 0 ? new Vector2(UVs1[i].X, UVs1[i].Y) : Vector2.Zero;
+					Vector2 UV2 = UVs2.Length != 0 ? new Vector2(UVs2[i].X, UVs2[i].Y) : Vector2.Zero;
+					Vector3 Normal = Normals.Length != 0 ? new Vector3(Normals[i].X, Normals[i].Y, Normals[i].Z) : Vector3.Zero;
+					Vector3 Tangent = Tangents.Length != 0 ? new Vector3(Tangents[i].X, Tangents[i].Y, Tangents[i].Z) : Vector3.Zero;
+					FoamColor Color = Colors.Length != 0 ? new FoamColor(Colors[i].R, Colors[i].G, Colors[i].B, Colors[i].A) : FoamColor.White;
 
-					if (UVs.Length != 0)
-						UV = new Vector2(UVs[i].X, UVs[i].Y);
-
-					FoamVertex3 V = new FoamVertex3(new Vector3(Verts[i].X, Verts[i].Y, Verts[i].Z), UV);
+					FoamVertex3 V = new FoamVertex3(new Vector3(Verts[i].X, Verts[i].Y, Verts[i].Z), UV1, UV2, Normal, Tangent, Color);
 					FoamVertices[i] = V;
 				}
 
+				bool CalculateTangents = Tangents.Length == 0 && UVs1.Length != 0;
+				//bool CalculateNormals = Normals.Length == 0;
+
 				List<ushort> FoamIndices = new List<ushort>();
-				foreach (var F in Msh.Faces)
-					foreach (var FaceIndex in F.Indices)
-						FoamIndices.Add((ushort)FaceIndex);
+				foreach (var F in Msh.Faces) {
+					ushort IndexA = (ushort)F.Indices[0];
+					ushort IndexB = (ushort)F.Indices[1];
+					ushort IndexC = (ushort)F.Indices[2];
+
+					if (CalculateTangents) {
+						FoamVertex3 V0 = FoamVertices[IndexA];
+						FoamVertex3 V1 = FoamVertices[IndexB];
+						FoamVertex3 V2 = FoamVertices[IndexC];
+
+						Vector3 DeltaPos1 = V1.Position - V0.Position;
+						Vector3 DeltaPos2 = V2.Position - V0.Position;
+
+						//if (CalculateTangents) {
+						Vector2 DeltaUV1 = V1.UV - V0.UV;
+						Vector2 DeltaUV2 = V2.UV - V0.UV;
+
+						Vector3 Tangent = (DeltaPos1 * DeltaUV2.Y - DeltaPos2 * DeltaUV1.Y) * (1.0f / (DeltaUV1.X * DeltaUV2.Y - DeltaUV1.Y * DeltaUV2.X));
+						FoamVertices[IndexA].Tangent = FoamVertices[IndexB].Tangent = FoamVertices[IndexC].Tangent = Tangent;
+						/*}
+
+						if (CalculateNormals)
+							FoamVertices[IndexA].Normal = FoamVertices[IndexB].Normal = FoamVertices[IndexC].Normal = Vector3.Normalize(Vector3.Cross(DeltaPos1, DeltaPos2));*/
+					}
+
+					FoamIndices.AddRange(F.Indices.Select(I => (ushort)I));
+				}
 
 				FoamBoneInfo[] BoneInfo = null;
 
@@ -124,23 +161,6 @@ namespace FoamCompile {
 						if (!ContainsBoneNamed(Bones, OrigBones[i].Name))
 							Utils.Append(ref Bones, new FoamBone(OrigBones[i].Name, -1, ConvertMatrix(OrigBones[i].OffsetMatrix)));
 					}
-
-					/*// Assign parents
-					Node[] NodeHierarchy = Flatten(Sc.RootNode);
-					Node RootNode = FindRoot(FindNode(NodeHierarchy, Bones[0].Name), Bones);
-					Utils.Append(ref Bones, new FoamBone(RootNode.Name, -1, NumMatrix4x4.Identity));
-
-					for (int i = 0; i < Bones.Length; i++) {
-						Node BoneNode = FindNode(NodeHierarchy, Bones[i].Name);
-						int BoneIndex = FindBoneIndex(Bones, BoneNode.Parent.Name);
-
-						if (BoneNode != RootNode)
-							if (BoneIndex == -1)
-								throw new Exception("Could not find a bone");
-
-						Bones[i].BindMatrix = ConvertMatrix(BoneNode.Transform);
-						Bones[i].ParentBoneIndex = BoneIndex;
-					}*/
 
 					// Convert vertex bone information
 					for (int i = 0; i < BoneInfo.Length; i++) {
@@ -195,7 +215,7 @@ namespace FoamCompile {
 				for (int i = 0; i < FrameCount; i++)
 					Frames[i] = ReadFrame(Anim.NodeAnimationChannels, BoneNames, i);
 
-				FoamAnimation Animation = new FoamAnimation(Anim.Name, Frames, BoneNames);
+				FoamAnimation Animation = new FoamAnimation(Anim.Name, Frames, BoneNames, (float)Anim.DurationInTicks, (float)Anim.TicksPerSecond);
 				Utils.Append(ref Animations, Animation);
 			}
 
