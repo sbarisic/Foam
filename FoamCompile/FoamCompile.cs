@@ -10,6 +10,7 @@ using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using AssMatrix4x4 = Assimp.Matrix4x4;
+using AssQuaternion = Assimp.Quaternion;
 using NumMatrix4x4 = System.Numerics.Matrix4x4;
 
 namespace FoamCompile {
@@ -20,11 +21,11 @@ namespace FoamCompile {
 			//FoamMesh[] Msh = Load("models/md3/watercan/watercan.md3");
 
 			//string[] InputFiles = Directory.GetFiles("C:/Projekti/Foam/pak0/models", "*.md3", SearchOption.AllDirectories);
-			//string[] InputFiles = { "models/fbx/scotty/scotty.fbx" };
-			//string[] InputFiles = { "models/md5/bob_lamp/bob_lamp_update.md5mesh" };
+			string[] InputFiles = { "models/md5/bob_lamp/bob_lamp_update.md5mesh" };
 			//string[] InputFiles = { "models/blend/gladiator/Gladiator.blend" };
-
-			string[] InputFiles = { "models/fbx/anitest/ThirdPersonRun.FBX", "models/fbx/anitest/mainani/SK_Mannequin.FBX" };
+			//string[] InputFiles = { "models/fbx/anitest/ThirdPersonRun.FBX", "models/fbx/anitest/mainani/SK_Mannequin.FBX" };
+			//string[] InputFiles = { "models/md5/skeleton/skeleton.md5mesh" };
+			//string[] InputFiles = { "models/fbx/scotty/scotty.fbx" };
 
 			foreach (var F in InputFiles) {
 				Console.WriteLine("Converting " + F);
@@ -158,28 +159,14 @@ namespace FoamCompile {
 
 					// Convert bones
 					for (int i = 0; i < OrigBones.Length; i++) {
-						if (!ContainsBoneNamed(Bones, OrigBones[i].Name))
+						if (!ContainsBoneNamed(Bones, OrigBones[i].Name)) {
 							Utils.Append(ref Bones, new FoamBone(OrigBones[i].Name, -1, ConvertMatrix(OrigBones[i].OffsetMatrix)));
+						}
 					}
 
 					// Convert vertex bone information
-					for (int i = 0; i < BoneInfo.Length; i++) {
-						FindWeightsFor(OrigBones, i, out VertexWeight[] Weights, out int[] VertexBones);
-
-						FoamBoneInfo BInfo = new FoamBoneInfo();
-
-						BInfo.Bone1 = VertexBones[0];
-						BInfo.Bone2 = VertexBones[1];
-						BInfo.Bone3 = VertexBones[2];
-						BInfo.Bone4 = VertexBones[3];
-
-						BInfo.Weight1 = Weights[0].Weight;
-						BInfo.Weight2 = Weights[1].Weight;
-						BInfo.Weight3 = Weights[2].Weight;
-						BInfo.Weight4 = Weights[3].Weight;
-
-						BoneInfo[i] = BInfo;
-					}
+					for (int i = 0; i < FoamVertices.Length; i++)
+						BoneInfo[i] = FindWeightsFor(OrigBones, Bones, i);
 				}
 
 				MeshList.Add(new FoamMesh(FoamVertices, FoamIndices?.ToArray() ?? null, BoneInfo, MeshName, Material));
@@ -187,19 +174,32 @@ namespace FoamCompile {
 
 			if (Bones.Length > 0) {
 				Node[] NodeHierarchy = Flatten(Sc.RootNode);
+				//Node SceneRootNode = Sc.RootNode;
 				Node RootNode = FindRoot(FindNode(NodeHierarchy, Bones[0].Name), Bones);
-				Utils.Prepend(ref Bones, new FoamBone(RootNode.Name, -1, NumMatrix4x4.Identity));
+				Utils.Prepend(ref Bones, new FoamBone(RootNode.Name, -1, ConvertMatrix(RootNode.Transform)));
+
+				/*Node RootNodeTest = RootNode;
+				while (RootNodeTest.Parent != null) {
+					Bones[0].BindMatrix = Bones[0].BindMatrix * ConvertMatrix(RootNodeTest.Transform);
+					RootNodeTest = RootNodeTest.Parent;
+				}*/
+
+
+				/*while (RootNode.Parent != null) {
+					Utils.Prepend(ref Bones, new FoamBone(RootNode.Name, -1, NumMatrix4x4.Identity));
+					RootNode = RootNode.Parent;
+				}*/
+
 
 				for (int i = 0; i < Bones.Length; i++) {
 					Node BoneNode = FindNode(NodeHierarchy, Bones[i].Name);
-					int BoneIndex = FindBoneIndex(Bones, BoneNode.Parent.Name);
+					int BoneParentIndex = FindBoneIndex(Bones, BoneNode.Parent.Name);
 
 					if (BoneNode != RootNode)
-						if (BoneIndex == -1)
+						if (BoneParentIndex == -1)
 							throw new Exception("Could not find a bone");
 
-					Bones[i].BindMatrix = ConvertMatrix(BoneNode.Transform);
-					Bones[i].ParentBoneIndex = BoneIndex;
+					Bones[i].ParentBoneIndex = BoneParentIndex;
 				}
 			} else
 				Bones = null;
@@ -222,24 +222,39 @@ namespace FoamCompile {
 			return new FoamModel(Path.GetFileNameWithoutExtension(FileName), FoamFlags.Model, MeshList.ToArray(), Bones, Animations);
 		}
 
-		static void FindWeightsFor(Bone[] Bones, int VertexID, out VertexWeight[] Weights, out int[] VertexBones) {
-			List<VertexWeight> WeightsList = new List<VertexWeight>();
+		static FoamBoneInfo FindWeightsFor(Bone[] Bones, FoamBone[] FoamBones, int VertexID) {
+			List<float> WeightsList = new List<float>();
 			List<int> VertexBonesList = new List<int>();
 
-			for (int i = 0; i < Bones.Length; i++)
-				foreach (var W in Bones[i].VertexWeights)
+			for (int i = 0; i < Bones.Length; i++) {
+				Bone B = Bones[i];
+
+				foreach (var W in B.VertexWeights)
 					if (W.VertexID == VertexID) {
-						WeightsList.Add(W);
-						VertexBonesList.Add(i);
+						WeightsList.Add(W.Weight);
+						VertexBonesList.Add(FindBoneIndex(FoamBones, B.Name));
 					}
+			}
 
 			while (WeightsList.Count < 4) {
-				WeightsList.Add(new VertexWeight(0, 0));
+				WeightsList.Add(0);
 				VertexBonesList.Add(0);
 			}
 
-			VertexBones = VertexBonesList.ToArray();
-			Weights = WeightsList.ToArray();
+			if (WeightsList.Count > 4)
+				throw new Exception("More than 4 vertex bone weights not supported");
+
+			FoamBoneInfo BInfo = new FoamBoneInfo();
+			BInfo.Bone1 = VertexBonesList[0];
+			BInfo.Bone2 = VertexBonesList[1];
+			BInfo.Bone3 = VertexBonesList[2];
+			BInfo.Bone4 = VertexBonesList[3];
+
+			BInfo.Weight1 = WeightsList[0];
+			BInfo.Weight2 = WeightsList[1];
+			BInfo.Weight3 = WeightsList[2];
+			BInfo.Weight4 = WeightsList[3];
+			return BInfo;
 		}
 
 		static FoamAnimationFrame ReadFrame(List<NodeAnimationChannel> Channels, string[] BoneNames, int Frame) {
@@ -284,7 +299,16 @@ namespace FoamCompile {
 		}
 
 		static NumMatrix4x4 ConvertMatrix(AssMatrix4x4 Mat) {
-			return *(NumMatrix4x4*)&Mat;
+			//return NumMatrix4x4.Transpose(*(NumMatrix4x4*)&Mat);
+			//return NumMatrix4x4.Transpose(*(NumMatrix4x4*)&Mat);
+
+			Mat.Decompose(out Vector3D Scaling, out AssQuaternion Rotation, out Vector3D Translation);
+
+			NumMatrix4x4 Rot = NumMatrix4x4.CreateFromQuaternion(ConvertQuat(Rotation));
+			NumMatrix4x4 Pos = NumMatrix4x4.CreateTranslation(ConvertVec(Translation));
+			NumMatrix4x4 Scl = NumMatrix4x4.CreateScale(ConvertVec(Scaling));
+			return Scl * Rot * Pos;
+			//*/
 		}
 
 		static System.Numerics.Quaternion ConvertQuat(Assimp.Quaternion Q) {

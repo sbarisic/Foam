@@ -457,6 +457,12 @@ namespace Foam {
 			return Animations[AnimIndex].FindBoneTransform(CurBone.Name, FrameIndex) * ParentTrans;
 		}
 
+		/*public Matrix4x4 CalcWorldTransformLerp(int AnimIndex, int FrameIndex, FoamBoneInfo BoneInfo) {
+
+
+
+		}*/
+
 		public void SaveToFile(string FileName) {
 			using (FileStream FS = File.Open(FileName, FileMode.Create))
 			using (BinaryWriter Writer = new BinaryWriter(FS))

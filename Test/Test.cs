@@ -129,6 +129,7 @@ namespace Test {
 				FoamBone Bone = Mdl.Bones[i];
 
 
+				//*
 				if (Mdl.Animations != null) {
 					// Actual bones
 					Matrix4x4 ParentWorld = Matrix4x4.Identity;
@@ -145,18 +146,23 @@ namespace Test {
 					Vector3 Center = (Pos + ParentPos) / 2;
 					WorldTexts[i] = new KeyValuePair<Vector2, string>(Raylib.GetWorldToScreen(Center, Cam3D), Bone.Name);
 				}
+				//*/
 
-				/*// Bind pose bones
+
+				// Bind pose bones
 				Matrix4x4 BindParentWorld = Matrix4x4.Identity;
 				if (Bone.ParentBoneIndex != -1)
 					BindParentWorld = Mdl.Bones[Bone.ParentBoneIndex].BindMatrix;
-				Matrix4x4.Decompose(BindParentWorld, out Vector3 BindParentScale, out Quaternion BindParentRot, out Vector3 BindParentPos);
+				Matrix4x4.Invert(BindParentWorld, out Matrix4x4 BindParentWorldInv);
+				Matrix4x4.Decompose(BindParentWorldInv * ParentRotMat, out Vector3 BindParentScale, out Quaternion BindParentRot, out Vector3 BindParentPos);
 
 				Matrix4x4 BindWorld = Mdl.Bones[i].BindMatrix;
-				Matrix4x4.Decompose(BindWorld, out Vector3 BindScale, out Quaternion BindRot, out Vector3 BindPos);
+				Matrix4x4.Invert(BindWorld, out Matrix4x4 BindWorldInv);
+				Matrix4x4.Decompose(BindWorldInv * ParentRotMat, out Vector3 BindScale, out Quaternion BindRot, out Vector3 BindPos);
+
 
 				Raylib.DrawLine3D(BindParentPos, BindPos, Color.Green);
-				*/
+				//*/
 			}
 		}
 
@@ -168,6 +174,8 @@ namespace Test {
 			if (Model.Animations == null)
 				return;
 
+			Matrix4x4 ParentRotMat = Matrix4x4.CreateFromYawPitchRoll(0, -Pi / 2, 0);
+
 			foreach (var Msh in Model.Meshes) {
 				List<Vertex3> Verts = new List<Vertex3>();
 				if (Msh.BoneInformation == null)
@@ -176,13 +184,23 @@ namespace Test {
 				foreach (var Index in Msh.Indices) {
 					FoamVertex3 Vert = Msh.Vertices[Index];
 					FoamBoneInfo Info = Msh.BoneInformation[Index];
-					Vector3 Pos = Vector3.Zero;
+
+					Matrix4x4 BindMatrix = Model.Bones[Info.Bone1].BindMatrix;
+					//BindMatrix += Model.Bones[Info.Bone1].BindMatrix * Info.Weight1;
+					//BindMatrix += Model.Bones[Info.Bone2].BindMatrix * Info.Weight2;
+					//BindMatrix += Model.Bones[Info.Bone3].BindMatrix * Info.Weight3;
+					//BindMatrix += Model.Bones[Info.Bone4].BindMatrix * Info.Weight4;
+					Matrix4x4.Invert(BindMatrix, out Matrix4x4 BindMatrixInv);
+
 
 					Matrix4x4 WorldTrans = Model.CalcWorldTransform(0, FrameIndex, Info.Bone1);
-					Matrix4x4.Decompose(WorldTrans, out Vector3 _S, out Quaternion Rot, out Vector3 Trans);
+					//WorldTrans += Model.CalcWorldTransform(0, FrameIndex, Info.Bone1) * Info.Weight1;
+					//WorldTrans += Model.CalcWorldTransform(0, FrameIndex, Info.Bone2) * Info.Weight2;
+					//WorldTrans += Model.CalcWorldTransform(0, FrameIndex, Info.Bone3) * Info.Weight3;
+					//WorldTrans += Model.CalcWorldTransform(0, FrameIndex, Info.Bone4) * Info.Weight4;
 
-					//Pos = Vert.Position;
-					Pos = Vector3.Transform(Vert.Position, WorldTrans);
+					Vector3 Pos = Vert.Position;
+					Pos = Vector3.Transform(Pos, BindMatrix);
 
 
 					Verts.Add(new Vertex3(Pos, new Vector2(Vert.UV.X, 1 - Vert.UV.Y)));
@@ -202,7 +220,7 @@ namespace Test {
 			Raylib.SetTargetFPS(60);
 
 			Cam3D = new Camera3D(new Vector3(1, 1, 1), Vector3.Zero, Vector3.UnitY);
-			Raylib.SetCameraMode(Cam3D, CameraMode.CAMERA_ORBITAL);
+			Raylib.SetCameraMode(Cam3D, CameraMode.CAMERA_FREE);
 
 			Model[] Models = null;
 			FoamModel FoamModel = null;
@@ -243,7 +261,7 @@ namespace Test {
 
 
 					for (int i = 0; i < Models.Length; i++)
-						Raylib.DrawModelWires(Models[i], Vector3.Zero, 1, Color.White);
+						Raylib.DrawModel(Models[i], Vector3.Zero, 1, Color.White);
 
 					if (FoamModel != null)
 						DrawBones(FoamModel);
