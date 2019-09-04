@@ -52,6 +52,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="FoamCompile.cs" />
+    <Compile Include="MD3_AnimationCfg.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -146,35 +147,15 @@
     <None Include="models\glb\bee\Bee.glb">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="models\iqm\mrfixit.iqm">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="models\md3\watercan\watercan.md3">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="models\md3\watercan\watercan_dmg.md3">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="models\md5\archvile\af_pose.md5anim" />
-    <None Include="models\md5\archvile\archvile.md5mesh" />
-    <None Include="models\md5\archvile\attack1.md5anim" />
-    <None Include="models\md5\archvile\attack2.md5anim" />
-    <None Include="models\md5\archvile\attack3.md5anim" />
-    <None Include="models\md5\archvile\evade_left.md5anim" />
-    <None Include="models\md5\archvile\evade_right.md5anim" />
-    <None Include="models\md5\archvile\idle.md5anim" />
-    <None Include="models\md5\archvile\pain_chest1.md5anim" />
-    <None Include="models\md5\archvile\pain_chest2.md5anim" />
-    <None Include="models\md5\archvile\pain_head1.md5anim" />
-    <None Include="models\md5\archvile\pain_head2.md5anim" />
-    <None Include="models\md5\archvile\pain_luparm1.md5anim" />
-    <None Include="models\md5\archvile\pain_luparm2.md5anim" />
-    <None Include="models\md5\archvile\pain_ruparm1.md5anim" />
-    <None Include="models\md5\archvile\pain_ruparm2.md5anim" />
-    <None Include="models\md5\archvile\range_attack1.md5anim" />
-    <None Include="models\md5\archvile\range_attack2.md5anim" />
-    <None Include="models\md5\archvile\resurrection.md5anim" />
-    <None Include="models\md5\archvile\sight2.md5anim" />
-    <None Include="models\md5\archvile\stand.md5anim" />
-    <None Include="models\md5\archvile\teleport.md5anim" />
-    <None Include="models\md5\archvile\walk.md5anim" />
     <None Include="models\md5\bob_lamp\bob_lamp_update.blend">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -193,285 +174,6 @@
     <None Include="models\md5\bob_lamp\bob_lamp_update_export.md5mesh">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="models\md5\cacodemon\attack1.md5anim" />
-    <None Include="models\md5\cacodemon\cacodemon.md5mesh" />
-    <None Include="models\md5\cacodemon\head_pain.md5anim" />
-    <None Include="models\md5\cacodemon\idle.md5anim" />
-    <None Include="models\md5\cacodemon\initial.md5anim" />
-    <None Include="models\md5\cacodemon\left_pain.md5anim" />
-    <None Include="models\md5\cacodemon\range_attack1.md5anim" />
-    <None Include="models\md5\cacodemon\right_pain.md5anim" />
-    <None Include="models\md5\cacodemon\run.md5anim" />
-    <None Include="models\md5\cacodemon\sight.md5anim" />
-    <None Include="models\md5\cacodemon\tail_pain.md5anim" />
-    <None Include="models\md5\cacodemon\walk.md5anim" />
-    <None Include="models\md5\cherub\attack3.md5anim" />
-    <None Include="models\md5\cherub\cherub.md5mesh" />
-    <None Include="models\md5\cherub\crawl1.md5anim" />
-    <None Include="models\md5\cherub\crawl2.md5anim" />
-    <None Include="models\md5\cherub\crawl_pain_chest.md5anim" />
-    <None Include="models\md5\cherub\crawl_pain_left.md5anim" />
-    <None Include="models\md5\cherub\crawl_pain_right.md5anim" />
-    <None Include="models\md5\cherub\evade_left.md5anim" />
-    <None Include="models\md5\cherub\evade_right.md5anim" />
-    <None Include="models\md5\cherub\initial.md5anim" />
-    <None Include="models\md5\cherub\jump_end.md5anim" />
-    <None Include="models\md5\cherub\jump_loop.md5anim" />
-    <None Include="models\md5\cherub\jump_start.md5anim" />
-    <None Include="models\md5\cherub\playdead.md5anim" />
-    <None Include="models\md5\cherub\sight1.md5anim" />
-    <None Include="models\md5\cyberdemon\af_pose.md5anim" />
-    <None Include="models\md5\cyberdemon\cyberdemon.md5mesh" />
-    <None Include="models\md5\cyberdemon\death.md5anim" />
-    <None Include="models\md5\cyberdemon\idle.md5anim" />
-    <None Include="models\md5\cyberdemon\ik_pose.md5anim" />
-    <None Include="models\md5\cyberdemon\oneshot.md5anim" />
-    <None Include="models\md5\cyberdemon\pain_big1.md5anim" />
-    <None Include="models\md5\cyberdemon\sight.md5anim" />
-    <None Include="models\md5\cyberdemon\turret3.md5anim" />
-    <None Include="models\md5\cyberdemon\twoshot.md5anim" />
-    <None Include="models\md5\cyberdemon\walk3.md5anim" />
-    <None Include="models\md5\gseeker\af_pose.md5anim" />
-    <None Include="models\md5\gseeker\gseeker.md5mesh" />
-    <None Include="models\md5\gseeker\idle3.md5anim" />
-    <None Include="models\md5\gseeker\pain3.md5anim" />
-    <None Include="models\md5\gseeker\sight3.md5anim" />
-    <None Include="models\md5\gseeker\teleport3.md5anim" />
-    <None Include="models\md5\gseeker\travel3.md5anim" />
-    <None Include="models\md5\guardian\af_pose.md5anim" />
-    <None Include="models\md5\guardian\attack1.md5anim" />
-    <None Include="models\md5\guardian\attack2.md5anim" />
-    <None Include="models\md5\guardian\attack3.md5anim" />
-    <None Include="models\md5\guardian\death.md5anim" />
-    <None Include="models\md5\guardian\death_pose.md5anim" />
-    <None Include="models\md5\guardian\guardian.md5mesh" />
-    <None Include="models\md5\guardian\guardian_intro.md5anim" />
-    <None Include="models\md5\guardian\idle1.md5anim" />
-    <None Include="models\md5\guardian\idle2.md5anim" />
-    <None Include="models\md5\guardian\pain_head.md5anim" />
-    <None Include="models\md5\guardian\range_attack1.md5anim" />
-    <None Include="models\md5\guardian\run_L.md5anim" />
-    <None Include="models\md5\guardian\run_L_headbutt.md5anim" />
-    <None Include="models\md5\guardian\run_R.md5anim" />
-    <None Include="models\md5\guardian\run_R_headbutt.md5anim" />
-    <None Include="models\md5\guardian\sight1.md5anim" />
-    <None Include="models\md5\guardian\walk1_L.md5anim" />
-    <None Include="models\md5\guardian\walk1_R.md5anim" />
-    <None Include="models\md5\guardian\walk_attack_L.md5anim" />
-    <None Include="models\md5\guardian\walk_attack_R.md5anim" />
-    <None Include="models\md5\hellknight\attack2.md5anim" />
-    <None Include="models\md5\hellknight\attack3.md5anim" />
-    <None Include="models\md5\hellknight\chest.md5anim" />
-    <None Include="models\md5\hellknight\headpain.md5anim" />
-    <None Include="models\md5\hellknight\hellknight.md5mesh" />
-    <None Include="models\md5\hellknight\idle2.md5anim" />
-    <None Include="models\md5\hellknight\ik_pose.md5anim" />
-    <None Include="models\md5\hellknight\initial.md5anim" />
-    <None Include="models\md5\hellknight\leftslash.md5anim" />
-    <None Include="models\md5\hellknight\pain1.md5anim" />
-    <None Include="models\md5\hellknight\pain_luparm.md5anim" />
-    <None Include="models\md5\hellknight\pain_ruparm.md5anim" />
-    <None Include="models\md5\hellknight\range_attack2.md5anim" />
-    <None Include="models\md5\hellknight\roar1.md5anim" />
-    <None Include="models\md5\hellknight\stand.md5anim" />
-    <None Include="models\md5\hellknight\turret_attack.md5anim" />
-    <None Include="models\md5\hellknight\walk7.md5anim" />
-    <None Include="models\md5\hellknight\walk7_left.md5anim" />
-    <None Include="models\md5\imp\a2_elevator.md5anim" />
-    <None Include="models\md5\imp\cabinet_leap.md5anim" />
-    <None Include="models\md5\imp\ceilingimp.md5anim" />
-    <None Include="models\md5\imp\ceilingimpidle.md5anim" />
-    <None Include="models\md5\imp\crouched_range1.md5anim" />
-    <None Include="models\md5\imp\d1corner.md5anim" />
-    <None Include="models\md5\imp\d1corneridle.md5anim" />
-    <None Include="models\md5\imp\evade_left.md5anim" />
-    <None Include="models\md5\imp\evade_left_on4.md5anim" />
-    <None Include="models\md5\imp\evade_right.md5anim" />
-    <None Include="models\md5\imp\evade_right_on4.md5anim" />
-    <None Include="models\md5\imp\faster_walk.md5anim" />
-    <None Include="models\md5\imp\hangonceiling.md5anim" />
-    <None Include="models\md5\imp\idle1.md5anim" />
-    <None Include="models\md5\imp\idlecages.md5anim" />
-    <None Include="models\md5\imp\idlecolumn.md5anim" />
-    <None Include="models\md5\imp\imp.md5mesh" />
-    <None Include="models\md5\imp\imp1doorbreak.md5anim" />
-    <None Include="models\md5\imp\imp1wallcrawl.md5anim" />
-    <None Include="models\md5\imp\imp2doorbreak.md5anim" />
-    <None Include="models\md5\imp\imp2wallcrawl.md5anim" />
-    <None Include="models\md5\imp\impcyberwakeup.md5anim" />
-    <None Include="models\md5\imp\imptankidle.md5anim" />
-    <None Include="models\md5\imp\imptanktwitch.md5anim" />
-    <None Include="models\md5\imp\initial.md5anim" />
-    <None Include="models\md5\imp\jump_end.md5anim" />
-    <None Include="models\md5\imp\jump_loop.md5anim" />
-    <None Include="models\md5\imp\jump_loop2.md5anim" />
-    <None Include="models\md5\imp\jump_loop3.md5anim" />
-    <None Include="models\md5\imp\jump_start.md5anim" />
-    <None Include="models\md5\imp\leapdowncages.md5anim" />
-    <None Include="models\md5\imp\leapdowncolumn.md5anim" />
-    <None Include="models\md5\imp\offwall.md5anim" />
-    <None Include="models\md5\imp\offwallidle.md5anim" />
-    <None Include="models\md5\imp\on4_idle.md5anim" />
-    <None Include="models\md5\imp\on4_melee1.md5anim" />
-    <None Include="models\md5\imp\on4_melee2.md5anim" />
-    <None Include="models\md5\imp\on4_sight.md5anim" />
-    <None Include="models\md5\imp\outofhole.md5anim" />
-    <None Include="models\md5\imp\outofholeidle.md5anim" />
-    <None Include="models\md5\imp\pain3.md5anim" />
-    <None Include="models\md5\imp\pain_chest.md5anim" />
-    <None Include="models\md5\imp\pain_chest_on4.md5anim" />
-    <None Include="models\md5\imp\pain_head.md5anim" />
-    <None Include="models\md5\imp\pain_head_on4.md5anim" />
-    <None Include="models\md5\imp\pain_luparm.md5anim" />
-    <None Include="models\md5\imp\pain_luparm_on4.md5anim" />
-    <None Include="models\md5\imp\pain_ruparm.md5anim" />
-    <None Include="models\md5\imp\pain_ruparm_on4.md5anim" />
-    <None Include="models\md5\imp\range1.md5anim" />
-    <None Include="models\md5\imp\range3.md5anim" />
-    <None Include="models\md5\imp\range4.md5anim" />
-    <None Include="models\md5\imp\scurry2.md5anim" />
-    <None Include="models\md5\imp\scurry_leap.md5anim" />
-    <None Include="models\md5\imp\severedidle.md5anim" />
-    <None Include="models\md5\imp\severedwake.md5anim" />
-    <None Include="models\md5\imp\sight.md5anim" />
-    <None Include="models\md5\imp\sight2.md5anim" />
-    <None Include="models\md5\imp\slash1.md5anim" />
-    <None Include="models\md5\imp\slash2.md5anim" />
-    <None Include="models\md5\imp\slash3.md5anim" />
-    <None Include="models\md5\imp\teleportin.md5anim" />
-    <None Include="models\md5\imp\turret_attack1.md5anim" />
-    <None Include="models\md5\imp\turret_idle.md5anim" />
-    <None Include="models\md5\imp\walk1.md5anim" />
-    <None Include="models\md5\lostsoul\attack1.md5anim" />
-    <None Include="models\md5\lostsoul\attack2.md5anim" />
-    <None Include="models\md5\lostsoul\charge.md5anim" />
-    <None Include="models\md5\lostsoul\initial.md5anim" />
-    <None Include="models\md5\lostsoul\lostsoul.md5mesh" />
-    <None Include="models\md5\lostsoul\pain1.md5anim" />
-    <None Include="models\md5\lostsoul\pain2.md5anim" />
-    <None Include="models\md5\lostsoul\sight.md5anim" />
-    <None Include="models\md5\lostsoul\walk1.md5anim" />
-    <None Include="models\md5\maggot3\a2_elevator.md5anim" />
-    <None Include="models\md5\maggot3\af_pose.md5anim" />
-    <None Include="models\md5\maggot3\evade_left.md5anim" />
-    <None Include="models\md5\maggot3\evade_right.md5anim" />
-    <None Include="models\md5\maggot3\idle.md5anim" />
-    <None Include="models\md5\maggot3\jump_end.md5anim" />
-    <None Include="models\md5\maggot3\jump_loop.md5anim" />
-    <None Include="models\md5\maggot3\jump_start.md5anim" />
-    <None Include="models\md5\maggot3\leftclawattack.md5anim" />
-    <None Include="models\md5\maggot3\magcyberwakeup.md5anim" />
-    <None Include="models\md5\maggot3\maggot3.md5mesh" />
-    <None Include="models\md5\maggot3\maggotdownwall.md5anim" />
-    <None Include="models\md5\maggot3\oneninetytwoceiling.md5anim" />
-    <None Include="models\md5\maggot3\outofhole.md5anim" />
-    <None Include="models\md5\maggot3\outofhole2.md5anim" />
-    <None Include="models\md5\maggot3\outofhole3.md5anim" />
-    <None Include="models\md5\maggot3\pain_chest2.md5anim" />
-    <None Include="models\md5\maggot3\pain_leftarm2.md5anim" />
-    <None Include="models\md5\maggot3\pain_rightarm2.md5anim" />
-    <None Include="models\md5\maggot3\righthandsattack.md5anim" />
-    <None Include="models\md5\maggot3\run3.md5anim" />
-    <None Include="models\md5\maggot3\sight.md5anim" />
-    <None Include="models\md5\maggot3\teleportin.md5anim" />
-    <None Include="models\md5\maggot3\tongueattack.md5anim" />
-    <None Include="models\md5\maggot3\walk.md5anim" />
-    <None Include="models\md5\maggot3\walk2.md5anim" />
-    <None Include="models\md5\maledict\debris.md5anim" />
-    <None Include="models\md5\maledict\debris.md5mesh" />
-    <None Include="models\md5\maledict\endingcam.md5camera" />
-    <None Include="models\md5\maledict\endingcam2.md5camera" />
-    <None Include="models\md5\maledict\inhell.md5anim" />
-    <None Include="models\md5\maledict\inhell2.md5anim" />
-    <None Include="models\md5\maledict\maledict.md5mesh" />
-    <None Include="models\md5\mancubus\james\af_pose.md5anim" />
-    <None Include="models\md5\mancubus\james\attack1.md5anim" />
-    <None Include="models\md5\mancubus\james\idle.md5anim" />
-    <None Include="models\md5\mancubus\james\mancubus.md5mesh" />
-    <None Include="models\md5\mancubus\james\multifire1.md5anim" />
-    <None Include="models\md5\mancubus\james\multifire1_end.md5anim" />
-    <None Include="models\md5\mancubus\james\multifire1_start.md5anim" />
-    <None Include="models\md5\mancubus\james\pain.md5anim" />
-    <None Include="models\md5\mancubus\james\pain_chest.md5anim" />
-    <None Include="models\md5\mancubus\james\pain_head.md5anim" />
-    <None Include="models\md5\mancubus\james\pain_luparm.md5anim" />
-    <None Include="models\md5\mancubus\james\pain_ruparm.md5anim" />
-    <None Include="models\md5\mancubus\james\sight1.md5anim" />
-    <None Include="models\md5\mancubus\james\teleport.md5anim" />
-    <None Include="models\md5\mancubus\james\walk.md5anim" />
-    <None Include="models\md5\pinky\attack.md5anim" />
-    <None Include="models\md5\pinky\attack2.md5anim" />
-    <None Include="models\md5\pinky\attack3.md5anim" />
-    <None Include="models\md5\pinky\attack4.md5anim" />
-    <None Include="models\md5\pinky\evade_left.md5anim" />
-    <None Include="models\md5\pinky\evade_right.md5anim" />
-    <None Include="models\md5\pinky\glassbreak.md5anim" />
-    <None Include="models\md5\pinky\idle1.md5anim" />
-    <None Include="models\md5\pinky\initial.md5anim" />
-    <None Include="models\md5\pinky\pain_head3.md5anim" />
-    <None Include="models\md5\pinky\pain_luparm3.md5anim" />
-    <None Include="models\md5\pinky\pain_ruparm3.md5anim" />
-    <None Include="models\md5\pinky\pinky.md5mesh" />
-    <None Include="models\md5\pinky\roar.md5anim" />
-    <None Include="models\md5\pinky\roar2.md5anim" />
-    <None Include="models\md5\pinky\roar3.md5anim" />
-    <None Include="models\md5\pinky\run.md5anim" />
-    <None Include="models\md5\pinky\stand.md5anim" />
-    <None Include="models\md5\pinky\teleportin.md5anim" />
-    <None Include="models\md5\revenant\james\af_pose.md5anim" />
-    <None Include="models\md5\revenant\james\attack1.md5anim" />
-    <None Include="models\md5\revenant\james\attack2.md5anim" />
-    <None Include="models\md5\revenant\james\attack3.md5anim" />
-    <None Include="models\md5\revenant\james\evade_left1.md5anim" />
-    <None Include="models\md5\revenant\james\evade_left2.md5anim" />
-    <None Include="models\md5\revenant\james\evade_right1.md5anim" />
-    <None Include="models\md5\revenant\james\evade_right2.md5anim" />
-    <None Include="models\md5\revenant\james\idle1.md5anim" />
-    <None Include="models\md5\revenant\james\pain_chest1.md5anim" />
-    <None Include="models\md5\revenant\james\pain_chest2.md5anim" />
-    <None Include="models\md5\revenant\james\pain_head1.md5anim" />
-    <None Include="models\md5\revenant\james\pain_head2.md5anim" />
-    <None Include="models\md5\revenant\james\pain_luparm1.md5anim" />
-    <None Include="models\md5\revenant\james\pain_luparm2.md5anim" />
-    <None Include="models\md5\revenant\james\pain_ruparm1.md5anim" />
-    <None Include="models\md5\revenant\james\pain_ruparm2.md5anim" />
-    <None Include="models\md5\revenant\james\range_attack1.md5anim" />
-    <None Include="models\md5\revenant\james\range_attack2.md5anim" />
-    <None Include="models\md5\revenant\james\range_attack3.md5anim" />
-    <None Include="models\md5\revenant\james\revenant.md5mesh" />
-    <None Include="models\md5\revenant\james\sight1.md5anim" />
-    <None Include="models\md5\revenant\james\sight2.md5anim" />
-    <None Include="models\md5\revenant\james\teleport.md5anim" />
-    <None Include="models\md5\revenant\james\walk1.md5anim" />
-    <None Include="models\md5\revenant\james\walk2.md5anim" />
-    <None Include="models\md5\sabaoth\af_pose.md5anim" />
-    <None Include="models\md5\sabaoth\attack_bfg.md5anim" />
-    <None Include="models\md5\sabaoth\attack_claw.md5anim" />
-    <None Include="models\md5\sabaoth\death.md5anim" />
-    <None Include="models\md5\sabaoth\idle1.md5anim" />
-    <None Include="models\md5\sabaoth\move_start.md5anim" />
-    <None Include="models\md5\sabaoth\move_stop.md5anim" />
-    <None Include="models\md5\sabaoth\sabaoth.md5mesh" />
-    <None Include="models\md5\sabaoth\sight.md5anim" />
-    <None Include="models\md5\sabaoth\travel.md5anim" />
-    <None Include="models\md5\sentry\fold.md5anim" />
-    <None Include="models\md5\sentry\folded.md5anim" />
-    <None Include="models\md5\sentry\idle_stand1.md5anim" />
-    <None Include="models\md5\sentry\initial.md5anim" />
-    <None Include="models\md5\sentry\range_attack1.md5anim" />
-    <None Include="models\md5\sentry\range_attackend.md5anim" />
-    <None Include="models\md5\sentry\range_attackstart.md5anim" />
-    <None Include="models\md5\sentry\sentry.md5mesh" />
-    <None Include="models\md5\sentry\talk_primary.md5anim" />
-    <None Include="models\md5\sentry\turn_left.md5anim" />
-    <None Include="models\md5\sentry\turn_right.md5anim" />
-    <None Include="models\md5\sentry\unfold.md5anim" />
-    <None Include="models\md5\sentry\walk1.md5anim" />
-    <None Include="models\md5\sentry\walk1_beam.md5anim" />
-    <None Include="models\md5\sentry\walk1_pain.md5anim" />
-    <None Include="models\md5\sentry\wall_release.md5anim" />
-    <None Include="models\md5\sentry\wall_release_dummy.md5anim" />
-    <None Include="models\md5\sentry\wall_release_idle.md5anim" />
     <None Include="models\md5\skeleton\skeleton.md5anim">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -484,199 +186,6 @@
     <None Include="models\md5\skeleton\skeleton.md5mesh">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="models\md5\tick\af_pose.md5anim" />
-    <None Include="models\md5\tick\alert_idle.md5anim" />
-    <None Include="models\md5\tick\doorcrack1.md5anim" />
-    <None Include="models\md5\tick\downpipe.md5anim" />
-    <None Include="models\md5\tick\drop196.md5anim" />
-    <None Include="models\md5\tick\drop256.md5anim" />
-    <None Include="models\md5\tick\drop400.md5anim" />
-    <None Include="models\md5\tick\evade_left.md5anim" />
-    <None Include="models\md5\tick\evade_right.md5anim" />
-    <None Include="models\md5\tick\floorcrack.md5anim" />
-    <None Include="models\md5\tick\getoffwall.md5anim" />
-    <None Include="models\md5\tick\hole16.md5anim" />
-    <None Include="models\md5\tick\hole24.md5anim" />
-    <None Include="models\md5\tick\initial.md5anim" />
-    <None Include="models\md5\tick\leap1end.md5anim" />
-    <None Include="models\md5\tick\leap1loop.md5anim" />
-    <None Include="models\md5\tick\leap1start.md5anim" />
-    <None Include="models\md5\tick\melee1.md5anim" />
-    <None Include="models\md5\tick\melee2.md5anim" />
-    <None Include="models\md5\tick\outofhole.md5anim" />
-    <None Include="models\md5\tick\pain_head.md5anim" />
-    <None Include="models\md5\tick\pain_luparm1.md5anim" />
-    <None Include="models\md5\tick\pain_ruparm1.md5anim" />
-    <None Include="models\md5\tick\sight1.md5anim" />
-    <None Include="models\md5\tick\tick.md5mesh" />
-    <None Include="models\md5\tick\walk1.md5anim" />
-    <None Include="models\md5\tick\walk2.md5anim" />
-    <None Include="models\md5\tick\walk3.md5anim" />
-    <None Include="models\md5\trite\af_pose.md5anim" />
-    <None Include="models\md5\trite\alert_idle.md5anim" />
-    <None Include="models\md5\trite\doorcrack1.md5anim" />
-    <None Include="models\md5\trite\downpipe.md5anim" />
-    <None Include="models\md5\trite\downpipe_idle.md5anim" />
-    <None Include="models\md5\trite\drop196.md5anim" />
-    <None Include="models\md5\trite\drop256.md5anim" />
-    <None Include="models\md5\trite\drop400.md5anim" />
-    <None Include="models\md5\trite\evade_left.md5anim" />
-    <None Include="models\md5\trite\evade_right.md5anim" />
-    <None Include="models\md5\trite\floorcrack.md5anim" />
-    <None Include="models\md5\trite\getoffwall.md5anim" />
-    <None Include="models\md5\trite\guitrite.md5anim" />
-    <None Include="models\md5\trite\hole16.md5anim" />
-    <None Include="models\md5\trite\hole24.md5anim" />
-    <None Include="models\md5\trite\initial.md5anim" />
-    <None Include="models\md5\trite\leap1end.md5anim" />
-    <None Include="models\md5\trite\leap1loop.md5anim" />
-    <None Include="models\md5\trite\leap1start.md5anim" />
-    <None Include="models\md5\trite\melee1.md5anim" />
-    <None Include="models\md5\trite\melee2.md5anim" />
-    <None Include="models\md5\trite\outofhole.md5anim" />
-    <None Include="models\md5\trite\pain_head.md5anim" />
-    <None Include="models\md5\trite\pain_luparm1.md5anim" />
-    <None Include="models\md5\trite\pain_ruparm1.md5anim" />
-    <None Include="models\md5\trite\sight1.md5anim" />
-    <None Include="models\md5\trite\trite.md5mesh" />
-    <None Include="models\md5\trite\walk1.md5anim" />
-    <None Include="models\md5\trite\walk2.md5anim" />
-    <None Include="models\md5\trite\walk3.md5anim" />
-    <None Include="models\md5\vagary\af_pose.md5anim" />
-    <None Include="models\md5\vagary\alert_idle.md5anim" />
-    <None Include="models\md5\vagary\chestpain.md5anim" />
-    <None Include="models\md5\vagary\evade_left.md5anim" />
-    <None Include="models\md5\vagary\evade_right.md5anim" />
-    <None Include="models\md5\vagary\headpain.md5anim" />
-    <None Include="models\md5\vagary\luparmpain.md5anim" />
-    <None Include="models\md5\vagary\melee1.md5anim" />
-    <None Include="models\md5\vagary\melee2.md5anim" />
-    <None Include="models\md5\vagary\melee3.md5anim" />
-    <None Include="models\md5\vagary\ruparmpain.md5anim" />
-    <None Include="models\md5\vagary\sight.md5anim" />
-    <None Include="models\md5\vagary\stand.md5anim" />
-    <None Include="models\md5\vagary\vagary.md5mesh" />
-    <None Include="models\md5\vagary\walk3.md5anim" />
-    <None Include="models\md5\wraith\af_pose.md5anim" />
-    <None Include="models\md5\wraith\attack1.md5anim" />
-    <None Include="models\md5\wraith\attack2.md5anim" />
-    <None Include="models\md5\wraith\attack3.md5anim" />
-    <None Include="models\md5\wraith\ceiling_attack_128.md5anim" />
-    <None Include="models\md5\wraith\ceiling_attack_192.md5anim" />
-    <None Include="models\md5\wraith\ceiling_attack_256.md5anim" />
-    <None Include="models\md5\wraith\ceiling_idle_128.md5anim" />
-    <None Include="models\md5\wraith\ceiling_idle_192.md5anim" />
-    <None Include="models\md5\wraith\ceiling_idle_256.md5anim" />
-    <None Include="models\md5\wraith\evade_left.md5anim" />
-    <None Include="models\md5\wraith\evade_right.md5anim" />
-    <None Include="models\md5\wraith\idle.md5anim" />
-    <None Include="models\md5\wraith\pain_chest.md5anim" />
-    <None Include="models\md5\wraith\pain_head.md5anim" />
-    <None Include="models\md5\wraith\pain_luparm.md5anim" />
-    <None Include="models\md5\wraith\pain_ruparm.md5anim" />
-    <None Include="models\md5\wraith\run.md5anim" />
-    <None Include="models\md5\wraith\sight.md5anim" />
-    <None Include="models\md5\wraith\teleport.md5anim" />
-    <None Include="models\md5\wraith\walk.md5anim" />
-    <None Include="models\md5\wraith\wraith.md5mesh" />
-    <None Include="models\md5\zcc\chaingun_af_pose.md5anim" />
-    <None Include="models\md5\zcc\chaingun_crate_up_A.md5anim" />
-    <None Include="models\md5\zcc\chaingun_crate_up_B.md5anim" />
-    <None Include="models\md5\zcc\chaingun_crate_up_C.md5anim" />
-    <None Include="models\md5\zcc\chaingun_crate_up_D.md5anim" />
-    <None Include="models\md5\zcc\chaingun_crouch_left_pain.md5anim" />
-    <None Include="models\md5\zcc\chaingun_crouch_range_attack.md5anim" />
-    <None Include="models\md5\zcc\chaingun_crouch_range_attack_aim.md5anim" />
-    <None Include="models\md5\zcc\chaingun_crouch_range_attack_end.md5anim" />
-    <None Include="models\md5\zcc\chaingun_crouch_range_attack_loop.md5anim" />
-    <None Include="models\md5\zcc\chaingun_crouch_right_pain.md5anim" />
-    <None Include="models\md5\zcc\chaingun_evade_left.md5anim" />
-    <None Include="models\md5\zcc\chaingun_evade_right.md5anim" />
-    <None Include="models\md5\zcc\chaingun_idle.md5anim" />
-    <None Include="models\md5\zcc\chaingun_lower.md5anim" />
-    <None Include="models\md5\zcc\chaingun_on_activate.md5anim" />
-    <None Include="models\md5\zcc\chaingun_pain_chest.md5anim" />
-    <None Include="models\md5\zcc\chaingun_pain_head.md5anim" />
-    <None Include="models\md5\zcc\chaingun_pain_left.md5anim" />
-    <None Include="models\md5\zcc\chaingun_pain_right.md5anim" />
-    <None Include="models\md5\zcc\chaingun_raise.md5anim" />
-    <None Include="models\md5\zcc\chaingun_reload.md5anim" />
-    <None Include="models\md5\zcc\chaingun_run.md5anim" />
-    <None Include="models\md5\zcc\chaingun_sight.md5anim" />
-    <None Include="models\md5\zcc\chaingun_stand_aim.md5anim" />
-    <None Include="models\md5\zcc\chaingun_stand_fire.md5anim" />
-    <None Include="models\md5\zcc\chaingun_step_left.md5anim" />
-    <None Include="models\md5\zcc\chaingun_step_right.md5anim" />
-    <None Include="models\md5\zcc\chaingun_walk.md5anim" />
-    <None Include="models\md5\zcc\chaingun_wallleanleft_A.md5anim" />
-    <None Include="models\md5\zcc\chaingun_wallleanleft_B.md5anim" />
-    <None Include="models\md5\zcc\chaingun_wallleanleft_C.md5anim" />
-    <None Include="models\md5\zcc\chaingun_wallleanleft_D.md5anim" />
-    <None Include="models\md5\zcc\chaingun_wallleanright_A.md5anim" />
-    <None Include="models\md5\zcc\chaingun_wallleanright_B.md5anim" />
-    <None Include="models\md5\zcc\chaingun_wallleanright_C.md5anim" />
-    <None Include="models\md5\zcc\chaingun_wallleanright_D.md5anim" />
-    <None Include="models\md5\zcc\chaingun_wallrotleft_A.md5anim" />
-    <None Include="models\md5\zcc\chaingun_wallrotleft_B.md5anim" />
-    <None Include="models\md5\zcc\chaingun_wallrotleft_C.md5anim" />
-    <None Include="models\md5\zcc\chaingun_wallrotleft_D.md5anim" />
-    <None Include="models\md5\zcc\chaingun_wallrotright_A.md5anim" />
-    <None Include="models\md5\zcc\chaingun_wallrotright_B.md5anim" />
-    <None Include="models\md5\zcc\chaingun_wallrotright_C.md5anim" />
-    <None Include="models\md5\zcc\chaingun_wallrotright_D.md5anim" />
-    <None Include="models\md5\zcc\chaingun_wallstepleft_A.md5anim" />
-    <None Include="models\md5\zcc\chaingun_wallstepleft_B.md5anim" />
-    <None Include="models\md5\zcc\chaingun_wallstepleft_C.md5anim" />
-    <None Include="models\md5\zcc\chaingun_wallstepleft_D.md5anim" />
-    <None Include="models\md5\zcc\chaingun_wallstepright_A.md5anim" />
-    <None Include="models\md5\zcc\chaingun_wallstepright_B.md5anim" />
-    <None Include="models\md5\zcc\chaingun_wallstepright_C.md5anim" />
-    <None Include="models\md5\zcc\chaingun_wallstepright_D.md5anim" />
-    <None Include="models\md5\zcc\zcc.md5mesh" />
-    <None Include="models\md5\zct\delta2a_leapdown.md5anim" />
-    <None Include="models\md5\zct\initial.md5anim" />
-    <None Include="models\md5\zct\kick1.md5anim" />
-    <None Include="models\md5\zct\melee_tent.md5anim" />
-    <None Include="models\md5\zct\pain_chest.md5anim" />
-    <None Include="models\md5\zct\pain_head.md5anim" />
-    <None Include="models\md5\zct\pain_luparm.md5anim" />
-    <None Include="models\md5\zct\pain_ruparm.md5anim" />
-    <None Include="models\md5\zct\punch2.md5anim" />
-    <None Include="models\md5\zct\punch3.md5anim" />
-    <None Include="models\md5\zct\range_tentacle.md5anim" />
-    <None Include="models\md5\zct\stab1.md5anim" />
-    <None Include="models\md5\zct\teleportin.md5anim" />
-    <None Include="models\md5\zct\walk1.md5anim" />
-    <None Include="models\md5\zct\zct.md5mesh" />
-    <None Include="models\md5\zct\zctidle.md5anim" />
-    <None Include="models\md5\zct\zctleap1.md5anim" />
-    <None Include="models\md5\zct\zctrun5.md5anim" />
-    <None Include="models\md5\zct\zctsight1.md5anim" />
-    <None Include="models\md5\zct\zctsight2.md5anim" />
-    <None Include="models\md5\zfat\attack2.md5anim" />
-    <None Include="models\md5\zfat\attack3.md5anim" />
-    <None Include="models\md5\zfat\attack_leftslap.md5anim" />
-    <None Include="models\md5\zfat\barrel_Idle.md5anim" />
-    <None Include="models\md5\zfat\barrel_Throw.md5anim" />
-    <None Include="models\md5\zfat\bellypain.md5anim" />
-    <None Include="models\md5\zfat\death1_pose.md5anim" />
-    <None Include="models\md5\zfat\deltabathroomgetup.md5anim" />
-    <None Include="models\md5\zfat\deltabathroomloop.md5anim" />
-    <None Include="models\md5\zfat\facepain.md5anim" />
-    <None Include="models\md5\zfat\idle1.md5anim" />
-    <None Include="models\md5\zfat\initial.md5anim" />
-    <None Include="models\md5\zfat\leftarmpain.md5anim" />
-    <None Include="models\md5\zfat\pipeattack1.md5anim" />
-    <None Include="models\md5\zfat\pipeidle.md5anim" />
-    <None Include="models\md5\zfat\pipesight.md5anim" />
-    <None Include="models\md5\zfat\pipewalk4.md5anim" />
-    <None Include="models\md5\zfat\rightarmpain.md5anim" />
-    <None Include="models\md5\zfat\sight3.md5anim" />
-    <None Include="models\md5\zfat\walk1.md5anim" />
-    <None Include="models\md5\zfat\walk2.md5anim" />
-    <None Include="models\md5\zfat\walk3.md5anim" />
-    <None Include="models\md5\zfat\walk4.md5anim" />
-    <None Include="models\md5\zfat\zfat.md5mesh" />
     <None Include="models\md5\zombies\bernie\af_pose.md5anim" />
     <None Include="models\md5\zombies\bernie\bernie.md5mesh" />
     <None Include="models\md5\zombies\bernie\chest_pain1.md5anim" />
@@ -697,25 +206,63 @@
     <None Include="models\md5\zombies\bernie\swing3.md5anim" />
     <None Include="models\md5\zombies\bernie\swing4.md5anim" />
     <None Include="models\md5\zombies\bernie\swing5.md5anim" />
-    <None Include="models\md5\zombies\boney\af_pose.md5anim" />
-    <None Include="models\md5\zombies\boney\boney.md5mesh" />
-    <None Include="models\md5\zombies\boney\chest_pain1.md5anim" />
-    <None Include="models\md5\zombies\boney\chest_pain2.md5anim" />
-    <None Include="models\md5\zombies\boney\head_pain1.md5anim" />
-    <None Include="models\md5\zombies\boney\head_pain2.md5anim" />
-    <None Include="models\md5\zombies\boney\head_pain3.md5anim" />
-    <None Include="models\md5\zombies\boney\leftarm_pain1.md5anim" />
-    <None Include="models\md5\zombies\boney\leftarm_pain2.md5anim" />
-    <None Include="models\md5\zombies\boney\rightarm_pain1.md5anim" />
-    <None Include="models\md5\zombies\boney\rightarm_pain2.md5anim" />
-    <None Include="models\md5\zombies\boney\sight1.md5anim" />
-    <None Include="models\md5\zombies\boney\stand.md5anim" />
-    <None Include="models\md5\zombies\boney\swing1.md5anim" />
-    <None Include="models\md5\zombies\boney\swing2.md5anim" />
-    <None Include="models\md5\zombies\boney\swing3.md5anim" />
-    <None Include="models\md5\zombies\boney\swing4.md5anim" />
-    <None Include="models\md5\zombies\boney\swing5.md5anim" />
-    <None Include="models\md5\zombies\boney\walk1.md5anim" />
+    <None Include="models\md5\zombies\boney\af_pose.md5anim">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="models\md5\zombies\boney\boney.md5mesh">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="models\md5\zombies\boney\chest_pain1.md5anim">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="models\md5\zombies\boney\chest_pain2.md5anim">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="models\md5\zombies\boney\head_pain1.md5anim">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="models\md5\zombies\boney\head_pain2.md5anim">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="models\md5\zombies\boney\head_pain3.md5anim">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="models\md5\zombies\boney\leftarm_pain1.md5anim">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="models\md5\zombies\boney\leftarm_pain2.md5anim">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="models\md5\zombies\boney\rightarm_pain1.md5anim">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="models\md5\zombies\boney\rightarm_pain2.md5anim">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="models\md5\zombies\boney\sight1.md5anim">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="models\md5\zombies\boney\stand.md5anim">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="models\md5\zombies\boney\swing1.md5anim">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="models\md5\zombies\boney\swing2.md5anim">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="models\md5\zombies\boney\swing3.md5anim">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="models\md5\zombies\boney\swing4.md5anim">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="models\md5\zombies\boney\swing5.md5anim">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="models\md5\zombies\boney\walk1.md5anim">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="models\md5\zombies\chestpain1.md5anim" />
     <None Include="models\md5\zombies\chestpain2.md5anim" />
     <None Include="models\md5\zombies\crazybackup.md5anim" />
@@ -1047,6 +594,12 @@
     <Content Include="models\fbx\walker\walker_rough.jpg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="models\iqm\Body.tga">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="models\iqm\Head.tga">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="models\md3\watercan\readme_water.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -1110,7 +663,6 @@
     <Content Include="models\md5\bob_lamp\Readme.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="models\md5\imp\log.txt" />
     <Content Include="models\obj\walker\Control_Module_color.jpg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

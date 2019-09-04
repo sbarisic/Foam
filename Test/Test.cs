@@ -16,8 +16,6 @@ namespace Test {
 		static string[] ImgExtensions = new string[] { ".png", ".tga", ".jpg" };
 
 		static Vertex3 ToVert3(FoamVertex3 V) {
-			V.UV = new Vector2(V.UV.X, 1.0f - V.UV.Y);
-
 			return new Vertex3(V.Position, V.UV);
 		}
 
@@ -57,16 +55,16 @@ namespace Test {
 			SetTexture(Mdl, LoadTexture(FileName));
 		}
 
-		static Model FoamMeshToModel(string RootDir, FoamMesh Mesh) {
+		static Model FoamMeshToModel(string RootDir, FoamMesh Mesh, FoamModel FoamModel) {
 			Vertex3[] Verts = Mesh.GetFlatVertices().Select(V => ToVert3(V)).ToArray();
 			Mesh RaylibMesh = Raylib.GenMeshRaw(Verts);
 
 			Model Mdl = Raylib.LoadModelFromMesh(RaylibMesh);
-			Mdl.transform = Matrix4x4.CreateFromYawPitchRoll(0, Pi / 2, 0);
+			// Mdl.transform = Matrix4x4.CreateFromYawPitchRoll(0, Pi / 2, 0);
 
 			Mesh.Userdata = Mdl;
 
-			if (Mesh.Material.FindTexture(FoamTextureType.Diffuse, out FoamTexture Tex))
+			if (FoamModel.Materials[Mesh.MaterialIndex].FindTexture(FoamTextureType.Diffuse, out FoamTexture Tex))
 				SetTexture(Mdl, Path.Combine(RootDir, Tex.Name));
 
 			return Mdl;
@@ -82,7 +80,11 @@ namespace Test {
 				FoamModel.CalcBounds(out Vector3 Min, out Vector3 Max);
 				Scale = Utils.Max(Max - Min);
 
-				return FoamModel.Meshes.Select(M => FoamMeshToModel(RootDir, M)).ToArray();
+				List<Model> LoadedModels = new List<Model>();
+				foreach (var M in FoamModel.Meshes)
+					LoadedModels.Add(FoamMeshToModel(RootDir, M, FoamModel));
+
+				return LoadedModels.ToArray();
 			} catch (Exception E) {
 				Console.WriteLine("{0}", E.Message);
 			}
@@ -123,7 +125,7 @@ namespace Test {
 					WorldTexts[i] = new KeyValuePair<Vector2, string>(new Vector2(0, 0), "null");
 			}
 
-			Matrix4x4 ParentRotMat = Matrix4x4.CreateFromYawPitchRoll(0, -Pi / 2, 0);
+			//Matrix4x4 ParentRotMat = Matrix4x4.CreateFromYawPitchRoll(0, -Pi / 2, 0);
 
 			for (int i = 0; i < Mdl.Bones.Length; i++) {
 				FoamBone Bone = Mdl.Bones[i];
@@ -134,10 +136,10 @@ namespace Test {
 					// Actual bones
 					Matrix4x4 ParentWorld = Matrix4x4.Identity;
 					if (Bone.ParentBoneIndex != -1)
-						ParentWorld = Mdl.CalcWorldTransform(0, FrameIndex, Bone.ParentBoneIndex) * ParentRotMat;
+						ParentWorld = Mdl.CalcWorldTransform(0, FrameIndex, Bone.ParentBoneIndex);
 					Matrix4x4.Decompose(ParentWorld, out Vector3 ParentScale, out Quaternion ParentRot, out Vector3 ParentPos);
 
-					Matrix4x4 World = Mdl.CalcWorldTransform(0, FrameIndex, i) * ParentRotMat;
+					Matrix4x4 World = Mdl.CalcWorldTransform(0, FrameIndex, i);
 					Matrix4x4.Decompose(World, out Vector3 Scale, out Quaternion Rot, out Vector3 Pos);
 
 					Raylib.DrawLine3D(ParentPos, Pos, Color.Red);
@@ -152,14 +154,11 @@ namespace Test {
 				// Bind pose bones
 				Matrix4x4 BindParentWorld = Matrix4x4.Identity;
 				if (Bone.ParentBoneIndex != -1)
-					BindParentWorld = Mdl.Bones[Bone.ParentBoneIndex].BindMatrix;
-				Matrix4x4.Invert(BindParentWorld, out Matrix4x4 BindParentWorldInv);
-				Matrix4x4.Decompose(BindParentWorldInv * ParentRotMat, out Vector3 BindParentScale, out Quaternion BindParentRot, out Vector3 BindParentPos);
+					BindParentWorld = Mdl.CalcBindTransform(Bone.ParentBoneIndex);
+				Matrix4x4.Decompose(BindParentWorld, out Vector3 BindParentScale, out Quaternion BindParentRot, out Vector3 BindParentPos);
 
-				Matrix4x4 BindWorld = Mdl.Bones[i].BindMatrix;
-				Matrix4x4.Invert(BindWorld, out Matrix4x4 BindWorldInv);
-				Matrix4x4.Decompose(BindWorldInv * ParentRotMat, out Vector3 BindScale, out Quaternion BindRot, out Vector3 BindPos);
-
+				Matrix4x4 BindWorld = Mdl.CalcBindTransform(i);
+				Matrix4x4.Decompose(BindWorld, out Vector3 BindScale, out Quaternion BindRot, out Vector3 BindPos);
 
 				Raylib.DrawLine3D(BindParentPos, BindPos, Color.Green);
 				//*/
@@ -174,7 +173,7 @@ namespace Test {
 			if (Model.Animations == null)
 				return;
 
-			Matrix4x4 ParentRotMat = Matrix4x4.CreateFromYawPitchRoll(0, -Pi / 2, 0);
+			//Matrix4x4 ParentRotMat = Matrix4x4.CreateFromYawPitchRoll(0, -Pi / 2, 0);
 
 			foreach (var Msh in Model.Meshes) {
 				List<Vertex3> Verts = new List<Vertex3>();
@@ -184,13 +183,20 @@ namespace Test {
 				foreach (var Index in Msh.Indices) {
 					FoamVertex3 Vert = Msh.Vertices[Index];
 					FoamBoneInfo Info = Msh.BoneInformation[Index];
+					FoamBone Bone1 = Model.Bones[Info.Bone1];
 
-					Matrix4x4 BindMatrix = Model.Bones[Info.Bone1].BindMatrix;
+					// Bind pose bone
+					Matrix4x4 BindWorld = Bone1.BindMatrix;
+					Matrix4x4.Invert(BindWorld, out Matrix4x4 BindWorldInv);
+					Matrix4x4.Decompose(BindWorldInv, out Vector3 BindScale, out Quaternion BindRot, out Vector3 BindPos);
+					//*/
+
+					//Matrix4x4 BindMatrix = Model.Bones[Info.Bone1].BindMatrix;
 					//BindMatrix += Model.Bones[Info.Bone1].BindMatrix * Info.Weight1;
 					//BindMatrix += Model.Bones[Info.Bone2].BindMatrix * Info.Weight2;
 					//BindMatrix += Model.Bones[Info.Bone3].BindMatrix * Info.Weight3;
 					//BindMatrix += Model.Bones[Info.Bone4].BindMatrix * Info.Weight4;
-					Matrix4x4.Invert(BindMatrix, out Matrix4x4 BindMatrixInv);
+					//Matrix4x4.Invert(BindMatrix, out Matrix4x4 BindMatrixInv);
 
 
 					Matrix4x4 WorldTrans = Model.CalcWorldTransform(0, FrameIndex, Info.Bone1);
@@ -199,11 +205,12 @@ namespace Test {
 					//WorldTrans += Model.CalcWorldTransform(0, FrameIndex, Info.Bone3) * Info.Weight3;
 					//WorldTrans += Model.CalcWorldTransform(0, FrameIndex, Info.Bone4) * Info.Weight4;
 
-					Vector3 Pos = Vert.Position;
-					Pos = Vector3.Transform(Pos, BindMatrix);
+					Vector4 Pos = new Vector4(Vert.Position, 1);
+					Pos = Vector4.Transform(Pos, BindWorld);
+					Pos = Vector4.Transform(Pos, WorldTrans);
 
 
-					Verts.Add(new Vertex3(Pos, new Vector2(Vert.UV.X, 1 - Vert.UV.Y)));
+					Verts.Add(new Vertex3(new Vector3(Pos.X, Pos.Y, Pos.Z), new Vector2(Vert.UV.X, 1 - Vert.UV.Y)));
 				}
 
 				Mesh* RayMesh = ((Model)Msh.Userdata).meshes;
@@ -211,7 +218,7 @@ namespace Test {
 				*RayMesh = Raylib.GenMeshRaw(Verts.ToArray());
 			}
 		}
-
+		
 		static KeyValuePair<Vector2, string>[] WorldTexts = null;
 		static Camera3D Cam3D;
 
@@ -230,20 +237,22 @@ namespace Test {
 				if (Raylib.IsFileDropped()) {
 					Model[] NewModels = LoadModels(Raylib.GetDroppedFiles()[0], out float Scale, out FoamModel NewFoamModel);
 
-					if (NewModels.Length == 0 && NewFoamModel.Animations != null && FoamModel != null) {
-						foreach (var NewAnim in NewFoamModel.Animations)
-							Utils.Append(ref FoamModel.Animations, NewAnim);
-					} else {
-						if (Models != null) {
-							foreach (var M in Models)
-								Raylib.UnloadModel(M);
+					if (NewModels != null && NewFoamModel != null) {
+						if (NewModels.Length == 0 && NewFoamModel.Animations != null && FoamModel != null) {
+							foreach (var NewAnim in NewFoamModel.Animations)
+								Utils.Append(ref FoamModel.Animations, NewAnim);
+						} else {
+							if (Models != null) {
+								foreach (var M in Models)
+									Raylib.UnloadModel(M);
+							}
+
+							Models = NewModels;
+							FoamModel = NewFoamModel;
+
+							Cam3D.position = new Vector3(0.5f, 0.25f, 0.5f) * Scale;
+							Cam3D.target = new Vector3(0, 0.25f, 0) * Scale;
 						}
-
-						Models = NewModels;
-						FoamModel = NewFoamModel;
-
-						Cam3D.position = new Vector3(0.5f, 0.25f, 0.5f) * Scale;
-						Cam3D.target = new Vector3(0, 0.25f, 0) * Scale;
 					}
 
 					Raylib.ClearDroppedFiles();
