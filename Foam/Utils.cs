@@ -43,6 +43,19 @@ namespace Foam {
 			return Encoding.UTF8.GetString(StringBytes);
 		}
 
+		public static string ReadNullTerminatedString(this BinaryReader Reader) {
+			int Cur = Reader.GetOffset();
+
+			int Len = 0;
+			while (Reader.ReadByte() != 0)
+				Len++;
+
+			Reader.Seek(Cur);
+			string Str = Encoding.UTF8.GetString(Reader.ReadBytes(Len));
+			Reader.ReadByte(); // Null
+			return Str;
+		}
+
 		public static void WriteStructArray<T>(this BinaryWriter Writer, T[] Arr) where T : unmanaged {
 			Writer.Write(Arr.Length);
 			int LenBytes = Arr.Length * sizeof(T);
@@ -55,9 +68,12 @@ namespace Foam {
 			}
 		}
 
-		public static T[] ReadStructArray<T>(this BinaryReader Reader) where T : unmanaged {
-			T[] Arr = new T[Reader.ReadInt32()];
-			int LenBytes = Arr.Length * sizeof(T);
+		public static T[] ReadStructArray<T>(this BinaryReader Reader, uint LenBytes) where T : unmanaged {
+			return Reader.ReadStructArray<T>((int)LenBytes);
+		}
+
+		public static T[] ReadStructArray<T>(this BinaryReader Reader, int LenBytes) where T : unmanaged {
+			T[] Arr = new T[LenBytes / sizeof(T)];
 
 			fixed (T* ArrPtr = Arr) {
 				byte* BytePtr = (byte*)ArrPtr;
@@ -67,6 +83,10 @@ namespace Foam {
 			}
 
 			return Arr;
+		}
+
+		public static T[] ReadStructArray<T>(this BinaryReader Reader) where T : unmanaged {
+			return Reader.ReadStructArray<T>(Reader.ReadInt32() * sizeof(T));
 		}
 
 		public static void WriteStruct<T>(this BinaryWriter Writer, T Val) where T : unmanaged {
@@ -123,6 +143,20 @@ namespace Foam {
 
 		public static float Min(Vector3 V) {
 			return Math.Min(Math.Min(V.X, V.Y), V.Z);
+		}
+
+		public static int GetOffset(this BinaryReader Reader) {
+			return (int)Reader.BaseStream.Position;
+		}
+
+		public static int Seek(this BinaryReader Reader, uint AbsOffset) {
+			int Cur = Reader.GetOffset();
+			Reader.BaseStream.Seek(AbsOffset, SeekOrigin.Begin);
+			return Cur;
+		}
+
+		public static int Seek(this BinaryReader Reader, int AbsOffset) {
+			return Reader.Seek((uint)AbsOffset);
 		}
 	}
 }

@@ -75,8 +75,14 @@ namespace Test {
 			Scale = 0;
 			FoamModel = null;
 
-			try {
-				FoamModel = FoamModel.FromFile(FileName);
+			string Ext = Path.GetExtension(FileName).ToLower();
+			if (Ext == ".iqm")
+				FoamModel = Foam.Loaders.IQM.Load(FileName);
+
+			//try {
+				if (FoamModel == null)
+					FoamModel = FoamModel.FromFile(FileName);
+
 				FoamModel.CalcBounds(out Vector3 Min, out Vector3 Max);
 				Scale = Utils.Max(Max - Min);
 
@@ -85,9 +91,9 @@ namespace Test {
 					LoadedModels.Add(FoamMeshToModel(RootDir, M, FoamModel));
 
 				return LoadedModels.ToArray();
-			} catch (Exception E) {
+			/*} catch (Exception E) {
 				Console.WriteLine("{0}", E.Message);
-			}
+			}*/
 
 			return null;
 		}
@@ -218,7 +224,7 @@ namespace Test {
 				*RayMesh = Raylib.GenMeshRaw(Verts.ToArray());
 			}
 		}
-		
+
 		static KeyValuePair<Vector2, string>[] WorldTexts = null;
 		static Camera3D Cam3D;
 
@@ -235,7 +241,8 @@ namespace Test {
 
 			while (!Raylib.WindowShouldClose()) {
 				if (Raylib.IsFileDropped()) {
-					Model[] NewModels = LoadModels(Raylib.GetDroppedFiles()[0], out float Scale, out FoamModel NewFoamModel);
+					string DroppedFile = Raylib.GetDroppedFiles()[0];
+					Model[] NewModels = LoadModels(DroppedFile, out float Scale, out FoamModel NewFoamModel);
 
 					if (NewModels != null && NewFoamModel != null) {
 						if (NewModels.Length == 0 && NewFoamModel.Animations != null && FoamModel != null) {

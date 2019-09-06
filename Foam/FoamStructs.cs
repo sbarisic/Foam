@@ -28,7 +28,7 @@ namespace Foam {
 			Writer.WriteStructArray(BoneTransforms);
 		}
 	}
-	
+
 	public class FoamAnimation : IFoam {
 		public string Name;
 		public string[] BoneNames;
@@ -254,8 +254,10 @@ namespace Foam {
 
 			List<FoamVertex3> Verts = new List<FoamVertex3>();
 
-			for (int i = 0; i < Indices.Length; i++)
-				Verts.Add(Vertices[Indices[i]]);
+			for (int i = 0; i < Indices.Length; i++) {
+				ushort Index = Indices[i];
+				Verts.Add(Vertices[Index]);
+			}
 
 			return Verts.ToArray();
 		}
@@ -412,7 +414,7 @@ namespace Foam {
 					Animations[i].Write(Writer);
 			} else
 				Writer.Write(0);
-			
+
 			// Materials
 			if (Materials != null) {
 				Writer.Write(Materials.Length);
@@ -457,7 +459,7 @@ namespace Foam {
 			}
 			if (Animations.Length == 0)
 				Animations = null;
-			
+
 			// Materials
 			Materials = new FoamMaterial[Reader.ReadInt32()];
 			for (int i = 0; i < Materials.Length; i++)
