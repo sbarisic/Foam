@@ -360,6 +360,27 @@ namespace Foam {
 	}
 
 	[StructLayout(LayoutKind.Sequential, Pack = 1)]
+	public struct FoamExtension : IFoam {
+		public string Name;
+		public byte[] Data;
+
+		public FoamExtension(string Name, byte[] Data) {
+			this.Name = Name;
+			this.Data = Data;
+		}
+
+		public void Read(BinaryReader Reader) {
+			Name = Reader.ReadUTF8String();
+			Data = Reader.ReadStructArray<byte>();
+		}
+
+		public void Write(BinaryWriter Writer) {
+			Writer.WriteUTF8String(Name);
+			Writer.WriteStructArray(Data);
+		}
+	}
+
+	[StructLayout(LayoutKind.Sequential, Pack = 1)]
 	public class FoamModel {
 		const int MAGIC = 0x6D616F46;
 		const int VERSION = 1;
@@ -372,8 +393,8 @@ namespace Foam {
 		public FoamMesh[] Meshes;
 		public FoamBone[] Bones;
 		public FoamAnimation[] Animations;
-
 		public FoamMaterial[] Materials;
+		public FoamExtension[] Extensions;
 
 		public FoamModel() {
 		}
@@ -422,6 +443,14 @@ namespace Foam {
 					Materials[i].Write(Writer);
 			} else
 				Writer.Write(0);
+
+			// Extensions
+			if (Extensions != null) {
+				Writer.Write(Extensions.Length);
+				for (int i = 0; i < Extensions.Length; i++)
+					Extensions[i].Write(Writer);
+			} else
+				Writer.Write(0);
 		}
 
 		public void Read(BinaryReader Reader) {
@@ -466,6 +495,13 @@ namespace Foam {
 				Materials[i].Read(Reader);
 			if (Materials.Length == 0)
 				Materials = null;
+
+			// Extensions
+			Extensions = new FoamExtension[Reader.ReadInt32()];
+			for (int i = 0; i < Extensions.Length; i++)
+				Extensions[i].Read(Reader);
+			if (Extensions.Length == 0)
+				Extensions = null;
 		}
 
 		public void CalcBounds(out Vector3 Min, out Vector3 Max) {
