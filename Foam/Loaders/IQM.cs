@@ -136,11 +136,21 @@ namespace Foam.Loaders {
 	public unsafe struct IQMPose {
 		public int parent; // parent < 0 means this is a root bone
 		public uint channelmask; // mask of which 10 channels are present for this joint pose
-		public fixed float channeloffset[10], channelscale[10];
+
+
+		//public fixed float channeloffset[10], channelscale[10];
 		// channels 0..2 are translation <Tx, Ty, Tz> and channels 3..6 are quaternion rotation <Qx, Qy, Qz, Qw>
 		// rotation is in relative/parent local space
 		// channels 7..9 are scale <Sx, Sy, Sz>
 		// output = (input*scale)*rotation + translation
+
+		public Vector3 Translate;
+		public Quaternion Rotate;
+		public Vector3 Scale;
+
+		public Vector3 TranslateScale;
+		public Vector4 RotateScale;
+		public Vector3 ScaleScale;
 	};
 
 	[StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -206,6 +216,8 @@ namespace Foam.Loaders {
 	}
 
 	public unsafe static class IQM {
+		public static bool ConvertToCCW = true;
+
 		static Vector3[] Position;
 		static Vector2[] Texcoord;
 		static Vector3[] Normal;
@@ -213,16 +225,17 @@ namespace Foam.Loaders {
 		static IQMBlendIndices[] BlendIndexes;
 		static IQMBlendWeights[] BlendWeights;
 		static FoamColor[] Color;
-
 		static byte[] Text;
 		static byte[] Comment;
-
 		static IQMTriangle[] Triangles;
 		static IQMMesh[] Meshes;
 		static IQMJoint[] Joints;
+		static IQMPose[] Poses;
+		static IQMAnim[] Anims;
 
 		public static FoamModel Load(string IQMFile) {
-			ushort[] frames;
+			int NumFrames = 0;
+			ushort[] FrameData = null;
 
 			Position = null;
 			Texcoord = null;
@@ -233,14 +246,19 @@ namespace Foam.Loaders {
 			Color = null;
 			Text = null;
 			Comment = null;
+			Triangles = null;
+			Meshes = null;
+			Joints = null;
+			Poses = null;
+			Anims = null;
 
 			FoamVertex3[] FoamVertices = null;
 			FoamBoneInfo[] FoamBoneInfo = null;
 
-
 			using (FileStream Stream = File.OpenRead(IQMFile))
 			using (BinaryReader Reader = new BinaryReader(Stream)) {
 				IQMHeader Header = Reader.ReadStruct<IQMHeader>();
+				NumFrames = (int)Header.num_frames;
 
 				if (Header.GetMagic() != "INTERQUAKEMODEL")
 					throw new Exception("Invalid magic in IQM file");
@@ -259,7 +277,6 @@ namespace Foam.Loaders {
 				if (Header.ofs_comment != 0) {
 					Reader.Seek(Header.ofs_comment);
 					Comment = Reader.ReadBytes((int)Header.num_comment);
-
 				}
 
 				// Vertex arrays
@@ -340,6 +357,18 @@ namespace Foam.Loaders {
 				Reader.Seek(Header.ofs_joints);
 				Joints = Reader.ReadStructArray<IQMJoint>((uint)(Header.num_joints * sizeof(IQMJoint)));
 
+				// Poses
+				Reader.Seek(Header.ofs_poses);
+				Poses = Reader.ReadStructArray<IQMPose>((uint)(Header.num_poses * sizeof(IQMPose)));
+
+				// Anims
+				Reader.Seek(Header.ofs_anims);
+				Anims = Reader.ReadStructArray<IQMAnim>((uint)(Header.num_anims * sizeof(IQMAnim)));
+
+				// Frames
+				Reader.Seek(Header.ofs_frames);
+				FrameData = Reader.ReadStructArray<ushort>((uint)(CountFrameDataLength(NumFrames) * sizeof(ushort)));
+
 				// Foam vertices
 				FoamVertices = new FoamVertex3[Header.num_vertexes];
 				for (int i = 0; i < FoamVertices.Length; i++)
@@ -357,24 +386,127 @@ namespace Foam.Loaders {
 					Info.Bone3 = BInd.BlendIndex3;
 					Info.Bone4 = BInd.BlendIndex4;
 
-					Info.Weight1 = BWgt.BlendWeight1 / 255.0f;
-					Info.Weight2 = BWgt.BlendWeight2 / 255.0f;
-					Info.Weight3 = BWgt.BlendWeight3 / 255.0f;
-					Info.Weight4 = BWgt.BlendWeight4 / 255.0f;
+					const float WeightDividend = 255.0f;
+					Info.Weight1 = BWgt.BlendWeight1 / WeightDividend;
+					Info.Weight2 = BWgt.BlendWeight2 / WeightDividend;
+					Info.Weight3 = BWgt.BlendWeight3 / WeightDividend;
+					Info.Weight4 = BWgt.BlendWeight4 / WeightDividend;
 
 					FoamBoneInfo[i] = Info;
 				}
 			}
 
+			FoamBone[] FoamBones = new FoamBone[Joints.Length];
+
+			List<FoamAnimationFrame> FoamFrames = new List<FoamAnimationFrame>();
+			List<string> FoamFrameBoneNames = new List<string>();
+
+			// Joints
+			for (int i = 0; i < Joints.Length; i++) {
+				ref IQMJoint J = ref Joints[i];
+
+				Matrix4x4 JointMatrix = CreateMatrix(J.Translate, J.Rotate, J.Scale);
+				Matrix4x4.Invert(JointMatrix, out Matrix4x4 JointMatrixInv);
+				FoamBones[i] = new FoamBone(GetText(J.name), J.parent, JointMatrixInv);
+			}
+
+			for (int i = 0; i < FoamBones.Length; i++)
+				if (FoamBones[i].ParentBoneIndex >= 0)
+					FoamBones[i].BindMatrix = FoamBones[FoamBones[i].ParentBoneIndex].BindMatrix * FoamBones[i].BindMatrix;
+
+			// Frames
+			int FrameIdx = 0;
+			for (int i = 0; i < NumFrames; i++) {
+				FoamAnimationFrame FoamFrame = new FoamAnimationFrame(new Matrix4x4[Poses.Length]);
+
+				for (int j = 0; j < Poses.Length; j++) {
+					ref IQMPose P = ref Poses[j];
+
+					Vector3 Translate = P.Translate;
+					Quaternion Rotate = P.Rotate;
+					Vector3 Scale = P.Scale;
+
+					if ((P.channelmask & 0x01) != 0)
+						Translate.X += FrameData[FrameIdx++] * P.TranslateScale.X;
+					if ((P.channelmask & 0x02) != 0)
+						Translate.Y += FrameData[FrameIdx++] * P.TranslateScale.Y;
+					if ((P.channelmask & 0x04) != 0)
+						Translate.Z += FrameData[FrameIdx++] * P.TranslateScale.Z;
+
+					if ((P.channelmask & 0x08) != 0)
+						Rotate.X += FrameData[FrameIdx++] * P.RotateScale.X;
+					if ((P.channelmask & 0x10) != 0)
+						Rotate.Y += FrameData[FrameIdx++] * P.RotateScale.Y;
+					if ((P.channelmask & 0x20) != 0)
+						Rotate.Z += FrameData[FrameIdx++] * P.RotateScale.Z;
+					if ((P.channelmask & 0x40) != 0)
+						Rotate.W += FrameData[FrameIdx++] * P.RotateScale.W;
+
+					if ((P.channelmask & 0x80) != 0)
+						Scale.X += FrameData[FrameIdx++] * P.ScaleScale.X;
+					if ((P.channelmask & 0x100) != 0)
+						Scale.Y += FrameData[FrameIdx++] * P.ScaleScale.Y;
+					if ((P.channelmask & 0x200) != 0)
+						Scale.Z += FrameData[FrameIdx++] * P.ScaleScale.Z;
+
+					if (i == 0)
+						FoamFrameBoneNames.Add(FoamBones[j].Name);
+
+					FoamFrame.BoneTransforms[j] = CreateMatrix(Translate, Rotate, Scale, false);
+				}
+
+				FoamFrames.Add(FoamFrame);
+			}
+
+			// Foam animations
+			FoamAnimation[] FoamAnims = Anims.Length > 0 ? new FoamAnimation[Anims.Length] : null;
+			for (int i = 0; i < Anims.Length; i++) {
+				ref IQMAnim Anim = ref Anims[i];
+				FoamAnims[i] = new FoamAnimation(GetText(Anim.name), FoamFrames.ToArray(), FoamFrameBoneNames.ToArray(), Anim.num_frames, Anim.framerate);
+			}
+
 			List<FoamMaterial> FoamMaterials = new List<FoamMaterial>();
 			List<FoamMesh> FoamMeshes = new List<FoamMesh>();
-
-
 			foreach (var M in Meshes)
 				FoamMeshes.Add(BuildFoamMesh(M, FoamVertices, FoamBoneInfo, FoamMaterials));
 
 			//return BuildFoamModel(Path.GetFileNameWithoutExtension(IQMFile));
-			return new FoamModel(Path.GetFileNameWithoutExtension(IQMFile), FoamFlags.Model, FoamMeshes.ToArray(), null, null, FoamMaterials.ToArray());
+			return new FoamModel(Path.GetFileNameWithoutExtension(IQMFile), FoamFlags.Model, FoamMeshes.ToArray(), FoamBones, FoamAnims, FoamMaterials.ToArray());
+		}
+
+		static int CountFrameDataLength(int NumFrames) {
+			int FrameCount = 0;
+
+			for (int i = 0; i < NumFrames; i++) {
+				for (int j = 0; j < Poses.Length; j++) {
+					ref IQMPose P = ref Poses[j];
+
+					if ((P.channelmask & 0x01) != 0)
+						FrameCount++;
+					if ((P.channelmask & 0x02) != 0)
+						FrameCount++;
+					if ((P.channelmask & 0x04) != 0)
+						FrameCount++;
+
+					if ((P.channelmask & 0x08) != 0)
+						FrameCount++;
+					if ((P.channelmask & 0x10) != 0)
+						FrameCount++;
+					if ((P.channelmask & 0x20) != 0)
+						FrameCount++;
+					if ((P.channelmask & 0x40) != 0)
+						FrameCount++;
+
+					if ((P.channelmask & 0x80) != 0)
+						FrameCount++;
+					if ((P.channelmask & 0x100) != 0)
+						FrameCount++;
+					if ((P.channelmask & 0x200) != 0)
+						FrameCount++;
+				}
+			}
+
+			return FrameCount;
 		}
 
 		static string GetText(uint Idx) {
@@ -388,7 +520,34 @@ namespace Foam.Loaders {
 
 		static FoamVertex3 BuildVertex(int Idx) {
 			Vector4 Tgt = Tangent?[Idx] ?? Vector4.Zero;
-			return new FoamVertex3(Position[Idx], Texcoord?[Idx] ?? Vector2.Zero, Vector2.Zero, Normal?[Idx] ?? Vector3.Zero, new Vector3(Tgt.X, Tgt.Y, Tgt.Z), Color?[Idx] ?? FoamColor.White);
+
+			Vector3 _Position = Position[Idx];
+			Vector2 _UV = Texcoord?[Idx] ?? Vector2.Zero;
+			Vector3 _Normal = Normal?[Idx] ?? Vector3.Zero;
+			Vector3 _Tangent = new Vector3(Tgt.X, Tgt.Y, Tgt.Z);
+			FoamColor _Color = Color?[Idx] ?? FoamColor.White;
+
+			if (ConvertToCCW) {
+				_UV = new Vector2(_UV.X, 1 - _UV.Y);
+				_Normal = SwapYZ(_Normal);
+				_Tangent = SwapYZ(_Tangent);
+			}
+
+			return new FoamVertex3(_Position, _UV, Vector2.Zero, _Normal, _Tangent, _Color);
+		}
+
+		static Vector3 SwapYZ(Vector3 V) {
+			float Z = V.Z;
+			V.Z = V.Y;
+			V.Y = Z;
+			return V;
+		}
+
+		static Matrix4x4 CreateMatrix(Vector3 Translate, Quaternion Rotate, Vector3 Scale, bool NormalizeRotation = true) {
+			if (NormalizeRotation)
+				Rotate = Quaternion.Normalize(Rotate);
+
+			return Utils.CreateMatrix(Translate, Rotate, Scale);
 		}
 
 		static FoamMesh BuildFoamMesh(IQMMesh IQMMesh, FoamVertex3[] Vertices, FoamBoneInfo[] BoneInfo, List<FoamMaterial> FoamMaterials) {
@@ -396,14 +555,24 @@ namespace Foam.Loaders {
 
 			int FirstTri = (int)IQMMesh.first_triangle;
 			for (int i = 0; i < IQMMesh.num_triangles; i++) {
-				FoamIndices.Add((ushort)(Triangles[FirstTri + i].Vertex1));
-				FoamIndices.Add((ushort)(Triangles[FirstTri + i].Vertex2));
-				FoamIndices.Add((ushort)(Triangles[FirstTri + i].Vertex3));
+				ushort Vert1 = (ushort)(Triangles[FirstTri + i].Vertex1);
+				ushort Vert2 = (ushort)(Triangles[FirstTri + i].Vertex2);
+				ushort Vert3 = (ushort)(Triangles[FirstTri + i].Vertex3);
+
+				if (ConvertToCCW) {
+					FoamIndices.Add(Vert3);
+					FoamIndices.Add(Vert2);
+					FoamIndices.Add(Vert1);
+				} else {
+					FoamIndices.Add(Vert1);
+					FoamIndices.Add(Vert2);
+					FoamIndices.Add(Vert3);
+				}
 			}
 
 			ushort MinIndex = FoamIndices.Min();
 			ushort MaxIndex = FoamIndices.Max();
-			int Count = (MaxIndex - MinIndex) - 1;
+			int Count = (MaxIndex - MinIndex) + 1;
 
 			FoamVertex3[] FoamVertices = Vertices.Skip(MinIndex).Take(Count).ToArray();
 			FoamBoneInfo[] FoamBoneInfo = BoneInfo.Skip(MinIndex).Take(Count).ToArray();

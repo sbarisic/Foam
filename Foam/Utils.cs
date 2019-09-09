@@ -72,6 +72,11 @@ namespace Foam {
 			return Reader.ReadStructArray<T>((int)LenBytes);
 		}
 
+		public static T[] ReadStructArrayToEnd<T>(this BinaryReader Reader) where T : unmanaged {
+			uint LenBytes = (uint)(Reader.BaseStream.Length - (long)Reader.GetOffset());
+			return Reader.ReadStructArray<T>((int)LenBytes);
+		}
+
 		public static T[] ReadStructArray<T>(this BinaryReader Reader, int LenBytes) where T : unmanaged {
 			T[] Arr = new T[LenBytes / sizeof(T)];
 
@@ -157,6 +162,44 @@ namespace Foam {
 
 		public static int Seek(this BinaryReader Reader, int AbsOffset) {
 			return Reader.Seek((uint)AbsOffset);
+		}
+
+		public static Quaternion ToQuat(this Vector4 V) {
+			return new Quaternion(V.X, V.Y, V.Z, V.W);
+		}
+
+		public static Vector4 ToVec(this Quaternion Q) {
+			return new Vector4(Q.X, Q.Y, Q.Z, Q.W);
+		}
+
+		public static float Lerp(float A, float B, float Amt) {
+			return A * (1 - Amt) + B * Amt;
+		}
+
+		public static Vector3 Lerp(Vector3 A, Vector3 B, float Amt) {
+			return new Vector3(Lerp(A.X, B.X, Amt), Lerp(A.Y, B.Y, Amt), Lerp(A.Z, B.Z, Amt));
+		}
+
+		public static Vector4 Lerp(Vector4 A, Vector4 B, float Amt) {
+			return new Vector4(Lerp(A.X, B.X, Amt), Lerp(A.Y, B.Y, Amt), Lerp(A.Z, B.Z, Amt), Lerp(A.W, B.W, Amt));
+		}
+
+		public static Matrix4x4 Lerp(Matrix4x4 A, Matrix4x4 B, float Amt) {
+			Matrix4x4.Decompose(A, out Vector3 A_Scale, out Quaternion A_Rot, out Vector3 A_Trans);
+			Matrix4x4.Decompose(B, out Vector3 B_Scale, out Quaternion B_Rot, out Vector3 B_Trans);
+
+			Vector3 Scale = Lerp(A_Scale, B_Scale, Amt);
+			Quaternion Rot = Quaternion.Slerp(A_Rot, B_Rot, Amt);
+			Vector3 Trans = Lerp(A_Trans, B_Trans, Amt);
+
+			return CreateMatrix(Trans, Rot, Scale);
+		}
+		
+		public static Matrix4x4 CreateMatrix(Vector3 Translate, Quaternion Rotate, Vector3 Scale) {
+			Matrix4x4 SclMat = Matrix4x4.CreateScale(Scale);
+			Matrix4x4 RotMat = Matrix4x4.CreateFromQuaternion(Rotate);
+			Matrix4x4 PosMat = Matrix4x4.CreateTranslation(Translate);
+			return RotMat * PosMat * SclMat;
 		}
 	}
 }

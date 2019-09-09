@@ -481,8 +481,8 @@ namespace Foam {
 
 		public Matrix4x4 CalcWorldTransform(int AnimIndex, int FrameIndex, int BoneIndex) {
 			FoamBone CurBone = Bones[BoneIndex];
-
 			Matrix4x4 ParentTrans = Matrix4x4.Identity;
+
 			if (CurBone.ParentBoneIndex != -1)
 				ParentTrans = CalcWorldTransform(AnimIndex, FrameIndex, CurBone.ParentBoneIndex);
 
