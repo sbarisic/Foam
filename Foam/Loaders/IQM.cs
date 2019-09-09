@@ -7,12 +7,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
-// https://www.icculus.org/homepages/phaethon/q3a/formats/md3format.html
-// https://github.com/excessive/iqm-exm/blob/master/iqm.txt
-// https://github.com/lsalzman/iqm/tree/master/demo
-// https://github.com/lsalzman/iqm/blob/master/demo/demo.cpp
-
-
 namespace Foam.Loaders {
 	[StructLayout(LayoutKind.Sequential, Pack = 1)]
 	public unsafe struct IQMHeader {
@@ -378,30 +372,29 @@ namespace Foam.Loaders {
 				FoamBoneInfo = new FoamBoneInfo[FoamVertices.Length];
 				for (int i = 0; i < FoamBoneInfo.Length; i++) {
 					FoamBoneInfo Info = new FoamBoneInfo();
-					IQMBlendIndices BInd = BlendIndexes[i];
-					IQMBlendWeights BWgt = BlendWeights[i];
 
-					Info.Bone1 = BInd.BlendIndex1;
-					Info.Bone2 = BInd.BlendIndex2;
-					Info.Bone3 = BInd.BlendIndex3;
-					Info.Bone4 = BInd.BlendIndex4;
+					if (BlendIndexes != null && BlendWeights != null) {
+						IQMBlendIndices BInd = BlendIndexes[i];
+						IQMBlendWeights BWgt = BlendWeights[i];
 
-					const float WeightDividend = 255.0f;
-					Info.Weight1 = BWgt.BlendWeight1 / WeightDividend;
-					Info.Weight2 = BWgt.BlendWeight2 / WeightDividend;
-					Info.Weight3 = BWgt.BlendWeight3 / WeightDividend;
-					Info.Weight4 = BWgt.BlendWeight4 / WeightDividend;
+						Info.Bone1 = BInd.BlendIndex1;
+						Info.Bone2 = BInd.BlendIndex2;
+						Info.Bone3 = BInd.BlendIndex3;
+						Info.Bone4 = BInd.BlendIndex4;
+
+						const float WeightDividend = 255.0f;
+						Info.Weight1 = BWgt.BlendWeight1 / WeightDividend;
+						Info.Weight2 = BWgt.BlendWeight2 / WeightDividend;
+						Info.Weight3 = BWgt.BlendWeight3 / WeightDividend;
+						Info.Weight4 = BWgt.BlendWeight4 / WeightDividend;
+					}
 
 					FoamBoneInfo[i] = Info;
 				}
 			}
 
-			FoamBone[] FoamBones = new FoamBone[Joints.Length];
-
-			List<FoamAnimationFrame> FoamFrames = new List<FoamAnimationFrame>();
-			List<string> FoamFrameBoneNames = new List<string>();
-
-			// Joints
+			// Joints/bones
+			FoamBone[] FoamBones = Joints.Length == 0 ? null : new FoamBone[Joints.Length];
 			for (int i = 0; i < Joints.Length; i++) {
 				ref IQMJoint J = ref Joints[i];
 
@@ -410,12 +403,15 @@ namespace Foam.Loaders {
 				FoamBones[i] = new FoamBone(GetText(J.name), J.parent, JointMatrixInv);
 			}
 
-			for (int i = 0; i < FoamBones.Length; i++)
+			for (int i = 0; i < (FoamBones?.Length ?? 0); i++)
 				if (FoamBones[i].ParentBoneIndex >= 0)
 					FoamBones[i].BindMatrix = FoamBones[FoamBones[i].ParentBoneIndex].BindMatrix * FoamBones[i].BindMatrix;
 
 			// Frames
+			List<FoamAnimationFrame> FoamFrames = new List<FoamAnimationFrame>();
+			List<string> FoamFrameBoneNames = new List<string>();
 			int FrameIdx = 0;
+
 			for (int i = 0; i < NumFrames; i++) {
 				FoamAnimationFrame FoamFrame = new FoamAnimationFrame(new Matrix4x4[Poses.Length]);
 

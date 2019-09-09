@@ -217,7 +217,12 @@ namespace Test {
 			if (Mdl.Animations != null) {
 				FoamAnimation Anim = Mdl.Animations[0];
 				int Frames = Anim.Frames.Length;
-				float SecondsPerFrame = (Anim.DurationInTicks / Anim.TicksPerSecond) / Frames;
+
+				float TicksPerSecond = Anim.TicksPerSecond;
+				if (TicksPerSecond == 0)
+					TicksPerSecond = 21;
+
+				float SecondsPerFrame = (Anim.DurationInTicks / TicksPerSecond) / Frames;
 
 				if (AnimStopwatch == null)
 					AnimStopwatch = Stopwatch.StartNew();
