@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test", "Test\Test.csproj", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FoamCompile", "FoamCompile\FoamCompile.csproj", "{D06FB192-3B36-435B-B02F-1E94A6CC6F53}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MdlToFoam", "MdlToFoam\MdlToFoam.csproj", "{F528EA8B-A6D6-4EF7-9C58-17B55A79370E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{D06FB192-3B36-435B-B02F-1E94A6CC6F53}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D06FB192-3B36-435B-B02F-1E94A6CC6F53}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D06FB192-3B36-435B-B02F-1E94A6CC6F53}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F528EA8B-A6D6-4EF7-9C58-17B55A79370E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F528EA8B-A6D6-4EF7-9C58-17B55A79370E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F528EA8B-A6D6-4EF7-9C58-17B55A79370E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F528EA8B-A6D6-4EF7-9C58-17B55A79370E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
