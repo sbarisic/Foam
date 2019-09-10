@@ -77,8 +77,8 @@ namespace Test {
 			FoamModel = null;
 
 			string Ext = Path.GetExtension(FileName).ToLower();
-			if (Ext == ".iqm") {
-				FoamModel = Foam.Loaders.IQM.Load(FileName);
+			if (Ext != ".foam") {
+				FoamModel = FoamConverter.Load(FileName);
 				// FoamModel.SaveToFile(Path.Combine(RootDir, Path.GetFileNameWithoutExtension(FileName) + ".foam"));
 			}
 
@@ -179,29 +179,9 @@ namespace Test {
 					FoamBoneInfo Info = Msh.BoneInformation[Index];
 					FoamBone Bone1 = Model.Bones[Info.Bone1];
 
-					// Bind pose bone
+					// TODO: Weights
 					Matrix4x4 BindWorld = Bone1.BindMatrix;
-					/*BindWorld = Model.Bones[Info.Bone1].BindMatrix * Info.Weight1;
-					BindWorld += Model.Bones[Info.Bone2].BindMatrix * Info.Weight2;
-					BindWorld += Model.Bones[Info.Bone3].BindMatrix * Info.Weight3;
-					BindWorld += Model.Bones[Info.Bone4].BindMatrix * Info.Weight4;
-					//*/
-
 					Matrix4x4 WorldTrans = Model.CalcWorldTransform(0, FrameIndex, Info.Bone1);
-
-					/*WorldTrans = Model.CalcWorldTransform(0, FrameIndex, Info.Bone1) * Info.Weight1;
-
-					if (Info.Weight2 != 0)
-						WorldTrans += Model.CalcWorldTransform(0, FrameIndex, Info.Bone2) * Info.Weight2;
-
-					if (Info.Weight3 != 0)
-						WorldTrans += Model.CalcWorldTransform(0, FrameIndex, Info.Bone3) * Info.Weight3;
-
-					if (Info.Weight4 != 0)
-						WorldTrans += Model.CalcWorldTransform(0, FrameIndex, Info.Bone4) * Info.Weight4;
-					//*/
-
-					//Vector3 Pos = Vector3.Transform(Vert.Position, BindWorld * WorldTrans);
 					Vector3 Pos = Vector3.Transform(Vert.Position, BindWorld * WorldTrans);
 
 					Verts.Add(new Vertex3(Pos, new Vector2(Vert.UV.X, 1 - Vert.UV.Y)));

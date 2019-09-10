@@ -68,6 +68,15 @@ namespace Foam {
 			}
 		}
 
+		public static T[] ReadStructArrayReverse<T>(this BinaryReader Reader, int Count) where T : unmanaged{
+			T[] Arr = new T[Count];
+
+			for (int i = 0; i < Count; i++)
+				Arr[i] = Reader.ReadStructReverse<T>();
+
+			return Arr;
+		}
+
 		public static T[] ReadStructArray<T>(this BinaryReader Reader, uint LenBytes) where T : unmanaged {
 			return Reader.ReadStructArray<T>((int)LenBytes);
 		}
@@ -106,6 +115,16 @@ namespace Foam {
 			byte* ValPtr = (byte*)&Val;
 
 			for (int i = 0; i < sizeof(T); i++)
+				ValPtr[i] = Reader.ReadByte();
+
+			return Val;
+		}
+
+		public static T ReadStructReverse<T>(this BinaryReader Reader) where T : unmanaged {
+			T Val;
+			byte* ValPtr = (byte*)&Val;
+
+			for (int i = sizeof(T) - 1; i >= 0; i--)
 				ValPtr[i] = Reader.ReadByte();
 
 			return Val;
@@ -194,12 +213,24 @@ namespace Foam {
 
 			return CreateMatrix(Trans, Rot, Scale);
 		}
-		
+
 		public static Matrix4x4 CreateMatrix(Vector3 Translate, Quaternion Rotate, Vector3 Scale) {
 			Matrix4x4 SclMat = Matrix4x4.CreateScale(Scale);
 			Matrix4x4 RotMat = Matrix4x4.CreateFromQuaternion(Rotate);
 			Matrix4x4 PosMat = Matrix4x4.CreateTranslation(Translate);
 			return RotMat * PosMat * SclMat;
+		}
+
+		public static byte[] ReadBytes(byte* BytesPtr, int Len, bool Reverse = false) {
+			byte[] Bytes = new byte[Len];
+			
+			for (int i = 0; i < Bytes.Length; i++)
+				Bytes[i] = BytesPtr[i];
+
+			if (Reverse)
+				Bytes = Bytes.Reverse().ToArray();
+
+			return Bytes;
 		}
 	}
 }
