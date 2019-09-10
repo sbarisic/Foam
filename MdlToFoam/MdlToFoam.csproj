@@ -22,6 +22,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -31,19 +32,33 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Facepunch.Parse">
       <HintPath>..\SourceUtils\SourceUtils\bin\Debug\Facepunch.Parse.dll</HintPath>
     </Reference>
-    <Reference Include="ICSharpCode.SharpZipLib">
-      <HintPath>..\SourceUtils\SourceUtils\bin\Debug\ICSharpCode.SharpZipLib.dll</HintPath>
+    <Reference Include="ICSharpCode.SharpZipLib, Version=0.86.0.518, Culture=neutral, PublicKeyToken=1b03e6acf1164f73, processorArchitecture=MSIL">
+      <HintPath>..\packages\SharpZipLib.0.86.0\lib\20\ICSharpCode.SharpZipLib.dll</HintPath>
+    </Reference>
+    <Reference Include="SevenZipSharp, Version=0.64.3890.29348, Culture=neutral, PublicKeyToken=20de82c62b055c88, processorArchitecture=MSIL">
+      <HintPath>..\packages\SevenZipSharp.0.64\lib\SevenZipSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="SharpFileSystem, Version=1.0.0.37, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\SharpFileSystem.1.0.0.37\lib\net45\SharpFileSystem.dll</HintPath>
+    </Reference>
+    <Reference Include="SharpFileSystem.SevenZip, Version=1.0.0.37, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\SharpFileSystem.SevenZip.1.0.0.37\lib\net45\SharpFileSystem.SevenZip.dll</HintPath>
+    </Reference>
+    <Reference Include="SharpFileSystem.SharpZipLib, Version=1.0.0.37, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\SharpFileSystem.SharpZipLib.1.0.0.37\lib\net45\SharpFileSystem.SharpZipLib.dll</HintPath>
     </Reference>
     <Reference Include="SourceUtils">
       <HintPath>..\SourceUtils\SourceUtils\bin\Debug\SourceUtils.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Numerics" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -54,9 +69,11 @@
   <ItemGroup>
     <Compile Include="MdlToFoam.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="VFS.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Foam\Foam.csproj">
