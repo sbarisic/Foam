@@ -235,6 +235,10 @@ namespace Foam {
 			for (int i = 0; i < TexLen; i++)
 				Textures[i].Write(Writer);
 		}
+
+		public override string ToString() {
+			return MaterialName;
+		}
 	}
 
 	[StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -368,6 +372,7 @@ namespace Foam {
 
 	public enum FoamFlags : int {
 		Model,
+		Level,
 	}
 
 	[StructLayout(LayoutKind.Sequential, Pack = 1)]

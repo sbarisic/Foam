@@ -77,7 +77,7 @@ namespace Test {
 			FoamModel = null;
 
 			string Ext = Path.GetExtension(FileName).ToLower();
-			if (Ext != ".foam") {
+			if (!(Ext == ".foam" || Ext == ".mapfoam")) {
 				FoamModel = FoamConverter.Load(FileName);
 				// FoamModel.SaveToFile(Path.Combine(RootDir, Path.GetFileNameWithoutExtension(FileName) + ".foam"));
 			}
