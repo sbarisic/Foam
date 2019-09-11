@@ -46,38 +46,70 @@ namespace MapFoam {
 			return Vector3.Normalize(new Vector3(r * (float)Math.Cos(t), r * (float)Math.Sin(t), z));
 		}
 
-		static float SampleHits(int Count, int Distance, Vector3 Origin, Vector3 WorldNormal, Scene<Model> ModelScene) {
+		static float SampleHits(Vector3[] SphereKernel, Vector3 Origin, Vector3 WorldNormal, Scene<Model> ModelScene) {
 			int Hits = 0;
 
-			for (int i = 0; i < Count; i++) {
-				Vector3 Dir = RandomDir();
+			for (int i = 0; i < SphereKernel.Length; i++) {
+				Vector3 Dir = SphereKernel[i];
 
-				while (Vector3.Dot(WorldNormal, Dir) <= 0)
-					Dir = RandomDir();
+				if (Vector3.Dot(WorldNormal, Dir) < 0)
+					Dir = -Dir;
 
-				Ray R = new Ray(Origin + Dir * 0.0001f, Dir);
-				if (ModelScene.Occludes(R, 0, Distance))
+				Ray R = new Ray(Origin /*+ WorldNormal * Phi*/, Dir);
+				if (ModelScene.Occludes(R, Phi))
 					Hits++;
 			}
 
-			return (float)Hits / Count;
+			return 1.0f - ((float)Hits / SphereKernel.Length);
 		}
 
-		public static void Compute(FoamModel Model, MeshAtlasMap[] AtlasMaps) {
+		const float Phi = 0.001f;
+
+		public static void Compute(FoamModel Model, MeshAtlasMap[] AtlasMaps, Light[] Lights) {
+			Vector3[] SphereKernel = new Vector3[64];
+			for (int i = 0; i < SphereKernel.Length; i++)
+				SphereKernel[i] = RandomDir();
+
+			Console.Write("Preparing Embree ... ");
 			using (Device Dev = new Device()) {
 				Scene<Model> ModelScene = new Scene<Model>(Dev, Flags.SCENE, Flags.TRAVERSAL);
 				ModelScene.Add(LoadModel(Dev, Model));
 				ModelScene.Commit();
+				Console.WriteLine("Done");
+
+				int LastPercentage = 0;
 
 				foreach (var AtlasMap in AtlasMaps) {
-					for (int Y = 0; Y < AtlasMap.Height; Y++)
-						for (int X = 0; X < AtlasMap.Width; X++)
-							if (AtlasMap.TryGet(X, Y, out Vector3 WorldPos, out Vector3 WorldNormal)) {
-								float Hits = SampleHits(16, 200, WorldPos, WorldNormal, ModelScene);
+					int MaxIdx = AtlasMap.Width * AtlasMap.Height;
 
-								byte Clr = (byte)(255 * (1.0f - Hits));
+					for (int Y = 0; Y < AtlasMap.Height; Y++)
+						for (int X = 0; X < AtlasMap.Width; X++) {
+							if (AtlasMap.TryGet(X, Y, out Vector3 WorldPos, out Vector3 WorldNormal)) {
+								// Percentage calculation
+								int Idx = Y * AtlasMap.Width + X;
+								int Percentage = (int)((float)Idx / MaxIdx * 100);
+								if (Percentage != LastPercentage) {
+									LastPercentage = Percentage;
+									Console.WriteLine("% {0}", Percentage);
+								}
+
+								//float Hits = SampleHits(SphereKernel, WorldPos, WorldNormal, ModelScene);
+								//byte Clr = (byte)(255 *  Hits);
+
+								byte Clr = 255;
+								float Distance = Vector3.Distance(WorldPos, Lights[0].Position);
+
+								Clr = (byte)(255 * Math.Max(0, Math.Min(1, 250.0f / Distance )));
+
+								Ray ToLight = new Ray(WorldPos, Vector3.Normalize(WorldPos - Lights[0].Position) * new Vector3(-1, 1, -1));
+
+								if (ModelScene.Occludes(ToLight, Phi, Distance))
+									Clr = 0;
+								//*/
+
 								AtlasMap.Atlas.SetPixel(X, Y, Color.FromArgb(Clr, Clr, Clr));
 							}
+						}
 				}
 
 				/*Ray R = new Ray(new Point(0, 0, 0), new Vector(0, 0, 1));

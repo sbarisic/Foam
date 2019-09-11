@@ -8,6 +8,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using System.Drawing.Imaging;
 using UVAtlasNET;
 
 namespace MapFoam {
@@ -28,11 +29,19 @@ namespace MapFoam {
 			bool EmbedTextures = ArgumentParser.Defined("e");
 			bool ComputeLights = !ArgumentParser.Defined("l");
 
+			if (ObjInput == null) {
+				ObjInput = "sample/test.obj";
+				MtlInput = "sample/test.mtl";
+				MapOutput = "sample/test.mapfoam";
+			}
+
 			if (!File.Exists(ObjInput))
 				throw new Exception("Obj input file not found");
 
 			if (!File.Exists(MtlInput))
 				throw new Exception("Mtl input file not found");
+
+			string OutDir = Path.GetDirectoryName(Path.GetFullPath(MapOutput));
 
 			Console.WriteLine("obj = '{0}'", ObjInput);
 			Console.WriteLine("mtl = '{0}'", MtlInput);
@@ -47,12 +56,14 @@ namespace MapFoam {
 			for (int i = 0; i < LevelModel.Meshes.Length; i++) {
 				Console.WriteLine("Generating atlas for mesh #" + i);
 
-				LevelModel.Meshes[i] = GenAtlas(LevelModel.Meshes[i], out MeshAtlasMap AtlasMap);
+				LevelModel.Meshes[i] = GenAtlas(OutDir, LevelModel.Meshes[i], out MeshAtlasMap AtlasMap);
 				Utils.Append(ref AtlasMaps, AtlasMap);
 			}
 
 			if (ComputeLights) {
-				LightMapping.Compute(LevelModel, AtlasMaps);
+				Light[] Lights = new Light[] { new Light(new Vector3(448, -112, 232)) };
+
+				LightMapping.Compute(LevelModel, AtlasMaps, Lights);
 
 				foreach (var AtlasMap in AtlasMaps) {
 					string TexName = AtlasMap.Mesh.MeshName + ".png";
@@ -60,14 +71,14 @@ namespace MapFoam {
 					ref FoamMaterial Mat = ref LevelModel.Materials[AtlasMap.Mesh.MaterialIndex];
 					Utils.Append(ref Mat.Textures, new FoamTexture(TexName, FoamTextureType.Diffuse));
 
-					AtlasMap.Atlas.Save(AtlasMap.Mesh.MeshName + ".png");
+					AtlasMap.Atlas.Save(Path.Combine(OutDir, TexName));
 				}
 			}
 
 			LevelModel.SaveToFile(MapOutput);
 		}
 
-		static FoamMesh GenAtlas(FoamMesh Msh, out MeshAtlasMap AtlasMap) {
+		static FoamMesh GenAtlas(string OutDir, FoamMesh Msh, out MeshAtlasMap AtlasMap) {
 			FoamVertex3[] Verts = Msh.GetFlatVertices();
 
 			int[] Inds = new int[Verts.Length];
@@ -80,10 +91,13 @@ namespace MapFoam {
 
 			AtlasMap = new MeshAtlasMap(Atlas.Width, Atlas.Height, Atlas, Msh);
 
+			Console.WriteLine("Filling atlas with world positions");
 			Vector2 ImgSize = new Vector2(Atlas.Width, Atlas.Height);
+
 			for (int Y = 0; Y < Atlas.Height; Y++)
 				for (int X = 0; X < Atlas.Width; X++) {
-					Atlas.SetPixel(X, Y, Color.Transparent);
+					Atlas.SetPixel(X, Y, Color.Red);
+
 					AtlasMap.Set(X, Y, null, Vector3.Zero);
 					Vector2 ImgUV = new Vector2(X, Y) / ImgSize;
 
@@ -92,18 +106,22 @@ namespace MapFoam {
 						FoamVertex3 B = Verts[i + 1];
 						FoamVertex3 C = Verts[i + 2];
 
-						Vector3 Bary = Barycentric(ImgUV, A.UV, B.UV, C.UV);
-						if (Bary.X > 0 && Bary.Y > 0 && Bary.Z > 0) {
-							Atlas.SetPixel(X, Y, Color.Red);
+						//const float Dist = -0.01f;
+						const float Dist = 0;
 
-							Vector3 Normal = Vector3.Normalize(Vector3.Cross(C.Position - B.Position, A.Position - B.Position));
-							AtlasMap.Set(X, Y, (A.Position * Bary.X) + (B.Position * Bary.Y) + (C.Position * Bary.Z), Normal);
-							break;
-						}
+						Vector3 Bary = Barycentric(ImgUV, A.UV, B.UV, C.UV);
+						if (Bary.X < Dist || Bary.Y < Dist || Bary.Z < Dist)
+							continue;
+
+						Atlas.SetPixel(X, Y, Color.Blue);
+
+						Vector3 Normal = Vector3.Normalize(Vector3.Cross(C.Position - B.Position, A.Position - B.Position));
+						AtlasMap.Set(X, Y, (A.Position * Bary.X) + (B.Position * Bary.Y) + (C.Position * Bary.Z), Normal);
+						break;
 					}
 				}
 
-			Atlas.Save(Msh.MeshName + ".png");
+			Atlas.Save(Path.Combine(OutDir, Msh.MeshName + ".png"));
 
 			Msh.Vertices = Verts;
 			Msh.Indices = Inds.Select(I => (ushort)I).ToArray();
@@ -115,12 +133,12 @@ namespace MapFoam {
 			float s = 1 / (2 * Area) * (A.Y * C.X - A.X * C.Y + (C.Y - A.Y) * Pt.X + (A.X - C.X) * Pt.Y);
 			float t = 1 / (2 * Area) * (A.X * B.Y - A.Y * B.X + (A.Y - B.Y) * Pt.X + (B.X - A.X) * Pt.Y);
 
-			return new Vector3(s, t, 1 - (s + t));
+			return new Vector3(1 - (s + t), s, t);
 		}
 
 		static Vector2[] GenAtlas(Vector3[] Points, int[] Inds, out Bitmap UVBmp) {
-			const int W = 512;
-			const int H = 512;
+			const int W = 1024;
+			const int H = 1024;
 
 			float[] PointsX = Points.Select(P => P.X).ToArray();
 			float[] PointsY = Points.Select(P => P.Y).ToArray();
@@ -141,7 +159,6 @@ namespace MapFoam {
 				UVs[i] = new Vector2(U[i], V[i]);
 
 			UVBmp = new Bitmap(W, H);
-
 			return UVs;
 		}
 	}
