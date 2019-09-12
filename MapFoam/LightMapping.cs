@@ -39,8 +39,14 @@ namespace MapFoam {
 		static Random Rnd = new Random();
 
 		static Vector3 RandomDir() {
-			float z = 2.0f * (float)Rnd.NextDouble() - 1.0f;
-			float t = 2.0f * (float)Rnd.NextDouble() * 3.14f;
+			float z;
+			float t;
+
+			lock (Rnd) {
+				z = 2.0f * (float)Rnd.NextDouble() - 1.0f;
+				t = 2.0f * (float)Rnd.NextDouble() * 3.14f;
+			}
+
 			float r = (float)Math.Sqrt(1.0f - z * z);
 
 			return Vector3.Normalize(new Vector3(r * (float)Math.Cos(t), r * (float)Math.Sin(t), z));
@@ -55,8 +61,9 @@ namespace MapFoam {
 				if (Vector3.Dot(WorldNormal, Dir) < 0)
 					Dir = -Dir;
 
-				Ray R = new Ray(Origin /*+ WorldNormal * Phi*/, Dir);
-				if (ModelScene.Occludes(R, Phi))
+				Ray R = new Ray(Origin, Dir);
+
+				if (ModelScene.Occludes(R))
 					Hits++;
 			}
 
@@ -77,40 +84,42 @@ namespace MapFoam {
 				ModelScene.Commit();
 				Console.WriteLine("Done");
 
-				int LastPercentage = 0;
+				int CursorY = Console.CursorTop;
 
-				foreach (var AtlasMap in AtlasMaps) {
+				Parallel.ForEach(AtlasMaps, (AtlasMap) => {
 					int MaxIdx = AtlasMap.Width * AtlasMap.Height;
+					int LastPercentage = 0;
 
-					for (int Y = 0; Y < AtlasMap.Height; Y++)
-						for (int X = 0; X < AtlasMap.Width; X++) {
+					int ThreadCursorY = CursorY++;
+
+					for (int Y = 0; Y < AtlasMap.Height; Y++) {
+						Parallel.For(0, AtlasMap.Width, (X) => {
 							if (AtlasMap.TryGet(X, Y, out Vector3 WorldPos, out Vector3 WorldNormal)) {
 								// Percentage calculation
 								int Idx = Y * AtlasMap.Width + X;
 								int Percentage = (int)((float)Idx / MaxIdx * 100);
-								if (Percentage != LastPercentage) {
+								if (Percentage > LastPercentage) {
 									LastPercentage = Percentage;
-									Console.WriteLine("% {0}", Percentage);
+
+									Console.CursorTop = ThreadCursorY;
+									Console.CursorLeft = 0;
+									Console.Write("% {0} ", Percentage);
 								}
 
-								//float Hits = SampleHits(SphereKernel, WorldPos, WorldNormal, ModelScene);
-								//byte Clr = (byte)(255 *  Hits);
+								WorldPos = WorldPos + WorldNormal * Phi;
 
-								byte Clr = 255;
-								float Distance = Vector3.Distance(WorldPos, Lights[0].Position);
+								float Hits = SampleHits(SphereKernel, WorldPos, WorldNormal, ModelScene);
+								byte Clr = (byte)(255 * Hits);
 
-								Clr = (byte)(255 * Math.Max(0, Math.Min(1, 250.0f / Distance )));
-
-								Ray ToLight = new Ray(WorldPos, Vector3.Normalize(WorldPos - Lights[0].Position) * new Vector3(-1, 1, -1));
-
-								if (ModelScene.Occludes(ToLight, Phi, Distance))
-									Clr = 0;
-								//*/
-
-								AtlasMap.Atlas.SetPixel(X, Y, Color.FromArgb(Clr, Clr, Clr));
+								AtlasMap.Atlas.SetPixel(X, Y, new FastColor(Clr));
 							}
-						}
-				}
+						});
+					}
+				});
+
+				Console.CursorLeft = 0;
+				Console.CursorTop = CursorY;
+				Console.WriteLine("Done!");
 
 				/*Ray R = new Ray(new Point(0, 0, 0), new Vector(0, 0, 1));
 				RTC.RayPacket1 Packet = ModelScene.Intersects(R, 0, 100);

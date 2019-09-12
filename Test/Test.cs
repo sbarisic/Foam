@@ -41,8 +41,9 @@ namespace Test {
 			Image Img = Raylib.LoadImage(FileName);
 
 			Texture2D Tex = Raylib.LoadTextureFromImage(Img);
-			Raylib.GenTextureMipmaps(&Tex);
-			Raylib.SetTextureFilter(Tex, TextureFilterMode.FILTER_TRILINEAR);
+			//Raylib.GenTextureMipmaps(&Tex);
+			Raylib.SetTextureFilter(Tex, TextureFilterMode.FILTER_POINT);
+			Raylib.SetTextureWrap(Tex, TextureWrapMode.WRAP_CLAMP);
 
 			return Tex;
 		}
@@ -67,7 +68,8 @@ namespace Test {
 			if (FoamModel.Materials[Mesh.MaterialIndex].FindTexture(FoamTextureType.Diffuse, out FoamTexture Tex))
 				SetTexture(Mdl, Path.Combine(RootDir, Tex.Name));
 
-			Mdl.transform = Matrix4x4.CreateFromYawPitchRoll(0, Pi / 2, 0);
+			//Mdl.transform = Matrix4x4.CreateFromYawPitchRoll(0, Pi / 2, 0);
+			Mdl.transform = Matrix4x4.CreateScale(0.01f);
 			return Mdl;
 		}
 
@@ -268,8 +270,8 @@ namespace Test {
 							Models = NewModels;
 							FoamModel = NewFoamModel;
 
-							Cam3D.position = new Vector3(0.5f, 0.25f, 0.5f) * Scale;
-							Cam3D.target = new Vector3(0, 0.25f, 0) * Scale;
+							//Cam3D.position = new Vector3(0.5f, 0.25f, 0.5f) * Scale;
+							//Cam3D.target = new Vector3(0, 0.25f, 0) * Scale;
 						}
 					}
 

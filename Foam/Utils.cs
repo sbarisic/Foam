@@ -68,7 +68,7 @@ namespace Foam {
 			}
 		}
 
-		public static T[] ReadStructArrayReverse<T>(this BinaryReader Reader, int Count) where T : unmanaged{
+		public static T[] ReadStructArrayReverse<T>(this BinaryReader Reader, int Count) where T : unmanaged {
 			T[] Arr = new T[Count];
 
 			for (int i = 0; i < Count; i++)
@@ -169,6 +169,18 @@ namespace Foam {
 			return Math.Min(Math.Min(V.X, V.Y), V.Z);
 		}
 
+		public static Vector2 Round(Vector2 V) {
+			return new Vector2((int)Math.Round(V.X), (int)Math.Round(V.Y));
+		}
+
+		public static Vector2 Min(Vector2 A, Vector2 B) {
+			return new Vector2(Math.Min(A.X, B.X), Math.Min(A.Y, B.Y));
+		}
+
+		public static Vector2 Max(Vector2 A, Vector2 B) {
+			return new Vector2(Math.Max(A.X, B.X), Math.Max(A.Y, B.Y));
+		}
+
 		public static int GetOffset(this BinaryReader Reader) {
 			return (int)Reader.BaseStream.Position;
 		}
@@ -223,7 +235,7 @@ namespace Foam {
 
 		public static byte[] ReadBytes(byte* BytesPtr, int Len, bool Reverse = false) {
 			byte[] Bytes = new byte[Len];
-			
+
 			for (int i = 0; i < Bytes.Length; i++)
 				Bytes[i] = BytesPtr[i];
 
