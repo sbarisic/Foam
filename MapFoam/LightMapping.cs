@@ -3,8 +3,10 @@ using Foam;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -38,6 +40,14 @@ namespace MapFoam {
 
 		static Random Rnd = new Random();
 
+		static float RndFloat() {
+			return (float)Rnd.NextDouble();
+		}
+
+		static float RndFloatNeg() {
+			return RndFloat() - 0.5f;
+		}
+
 		static Vector3 RandomDir() {
 			float z;
 			float t;
@@ -54,28 +64,79 @@ namespace MapFoam {
 
 		static float SampleHits(Vector3[] SphereKernel, Vector3 Origin, Vector3 WorldNormal, Scene<Model> ModelScene) {
 			int Hits = 0;
+			Origin = Origin + WorldNormal * Phi;
 
 			for (int i = 0; i < SphereKernel.Length; i++) {
 				Vector3 Dir = SphereKernel[i];
-
 				if (Vector3.Dot(WorldNormal, Dir) < 0)
 					Dir = -Dir;
 
 				Ray R = new Ray(Origin, Dir);
-
-				if (ModelScene.Occludes(R))
+				if (ModelScene.Occludes(R, 0, 200))
 					Hits++;
 			}
 
 			return 1.0f - ((float)Hits / SphereKernel.Length);
 		}
 
-		const float Phi = 0.001f;
+
+
+		static void BounceSunlight(Scene<Model> Scene, ref Vector3 InColor, Vector3 Origin, Vector3 OriginNormal, Vector3[] Dirs, Vector3[] SphereKernel) {
+			Origin = Origin + OriginNormal * Phi;
+
+			for (int i = 0; i < Dirs.Length; i++) {
+				Ray R = new Ray(Origin, Dirs[i]);
+				//RTC.RayPacket1 Packet = Scene.Intersects(R);
+				//Intersection<Model> Intersection = Packet.ToIntersection(Scene);
+
+				if (!Scene.Occludes(R))
+					InColor += (new Vector3(1.0f, 0.94f, 0.85f) / 3) / Dirs.Length;
+
+				//Model Mdl = Intersection.Instance;
+				//Vector3 HitNormal = Mdl.CorrectNormal(new Vector(Intersection.NX, Intersection.NY, Intersection.NZ));
+				//Vector3 HitPoint = Origin + OriginNormal * Intersection.Distance;
+
+				//Plane HitPlane = new Plane(HitNormal, Vector3.Distance(Vector3.Zero, HitPoint));
+				//Vector3 NewDir = Vector3.TransformNormal(Dir, Matrix4x4.CreateReflection(HitPlane));
+
+			}
+		}
+
+		static void BounceLight(Scene<Model> Scene, ref Vector3 InColor, Vector3 Origin, Vector3 OriginNormal, Light Lt) {
+			Origin = Origin + OriginNormal * Phi;
+
+			Vector3 ToLight = Lt.Position - Origin;
+			Vector3 ToLightDir = Vector3.Normalize(ToLight);
+			Ray LightRay = new Ray(Origin, ToLightDir);
+
+			if (!Scene.Occludes(LightRay, 0, ToLight.Length())) {
+				float CosLight = Vector.Dot(OriginNormal, ToLightDir);
+				float Attenuation = Lt.Intensity * CosLight / Vector.Dot(ToLight, ToLight);
+				InColor += Lt.Color * Attenuation;
+			}
+		}
+
+		const float Phi = 0.0001f;
 
 		public static void Compute(FoamModel Model, MeshAtlasMap[] AtlasMaps, Light[] Lights) {
-			Vector3[] SphereKernel = new Vector3[64];
+			//string SphereObj = Path.Combine(Path.GetDirectoryName(Assembly.GetCallingAssembly().Location), "models", "sphere_3.obj");
+			//Vector3[] SphereDirs = ObjLoader.LoadRaw(SphereObj).Select(V => Vector3.Normalize(V)).ToArray();
+
+			Vector3[] SphereKernel = new Vector3[256];
+
+			// Generate random sphere
 			for (int i = 0; i < SphereKernel.Length; i++)
 				SphereKernel[i] = RandomDir();
+
+
+			// Generate sun directions
+			Vector3 ToSun = Vector3.Normalize(-new Vector3(1, -1, 1));
+
+			//Vector3[] ToSunDirections = new[] { ToSun };
+			Vector3[] ToSunDirections = new Vector3[8];
+			const float MaxOffsetToSun = 5;
+			for (int i = 0; i < ToSunDirections.Length; i++)
+				ToSunDirections[i] = Vector3.Normalize(ToSun * 200 + new Vector3(RndFloatNeg() * MaxOffsetToSun, RndFloatNeg() * MaxOffsetToSun, RndFloatNeg() * MaxOffsetToSun));
 
 			Console.Write("Preparing Embree ... ");
 			using (Device Dev = new Device()) {
@@ -93,7 +154,7 @@ namespace MapFoam {
 					int ThreadCursorY = CursorY++;
 
 					for (int Y = 0; Y < AtlasMap.Height; Y++) {
-						Parallel.For(0, AtlasMap.Width, (X) => {
+						for (int X = 0; X < AtlasMap.Width; X++) {
 							if (AtlasMap.TryGet(X, Y, out Vector3 WorldPos, out Vector3 WorldNormal)) {
 								// Percentage calculation
 								int Idx = Y * AtlasMap.Width + X;
@@ -106,14 +167,25 @@ namespace MapFoam {
 									Console.Write("% {0} ", Percentage);
 								}
 
-								WorldPos = WorldPos + WorldNormal * Phi;
+								//WorldPos = WorldPos + WorldNormal * Phi;
 
-								float Hits = SampleHits(SphereKernel, WorldPos, WorldNormal, ModelScene);
-								byte Clr = (byte)(255 * Hits);
+								Vector3 Clr = new Vector3(0);
+								BounceSunlight(ModelScene, ref Clr, WorldPos, WorldNormal, ToSunDirections, SphereKernel);
 
-								AtlasMap.Atlas.SetPixel(X, Y, new FastColor(Clr));
+								//if (!(Clr.X >= 1 && Clr.Y >= 1 && Clr.Z >= 1))
+								Clr += new Vector3(SampleHits(SphereKernel, WorldPos, WorldNormal, ModelScene) / 4);
+
+								for (int i = 0; i < Lights.Length; i++)
+									BounceLight(ModelScene, ref Clr, WorldPos, WorldNormal, Lights[i]);
+
+								
+								// Gamma
+								Clr = Utils.Pow(Clr, new Vector3(1.0f / 2.0f));
+								Clr = Utils.Clamp(Clr, Vector3.Zero, Vector3.One);
+
+								AtlasMap.Atlas.SetPixel(X, Y, new FastColor((byte)(Clr.X * 255), (byte)(Clr.Y * 255), (byte)(Clr.Z * 255)));
 							}
-						});
+						}
 					}
 				});
 

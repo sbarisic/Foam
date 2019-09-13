@@ -7,9 +7,50 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace MapFoam {
+	// A group of connected faces, belonging to a single atlas.
+	[StructLayout(LayoutKind.Sequential, Pack = 1)]
+	unsafe struct XAtlasChart {
+		public uint atlasIndex; // Sub-atlas index.
+		public uint flags;
+		public uint* faceArray;
+		public uint faceCount;
+		public uint material;
+	};
+
+	[StructLayout(LayoutKind.Sequential, Pack = 1)]
+	unsafe struct XAtlasVertex {
+		public int atlasIndex; // Sub-atlas index. -1 if the vertex doesn't exist in any atlas.
+		public int chartIndex; // -1 if the vertex doesn't exist in any chart.
+		public Vector2 UV;
+		public uint xref; // Index of input vertex from which this output vertex originated
+	}
+
+	[StructLayout(LayoutKind.Sequential, Pack = 1)]
+	unsafe struct XAtlasMesh {
+		public XAtlasChart* chartArray;
+		public uint chartCount;
+		public uint* indexArray;
+		public uint indexCount;
+		public XAtlasVertex* vertexArray;
+		public uint vertexCount;
+	};
+
+	[StructLayout(LayoutKind.Sequential, Pack = 1)]
+	unsafe struct AtlasStruct {
+		public uint width; // Atlas width in texels.
+		public uint height; // Atlas height in texels.
+		public uint atlasCount; // Number of sub-atlases. Equal to 0 unless PackOptions resolution is changed from default (0).
+		public uint chartCount; // Total number of charts in all meshes.
+		public uint meshCount; // Number of output meshes. Equal to the number of times AddMesh was called.
+		public XAtlasMesh* meshes; // The output meshes, corresponding to each AddMesh call.
+		public float* utilization; // Normalized atlas texel utilization array. E.g. a value of 0.8 means 20% empty space. atlasCount in length.
+		public float texelsPerUnit; // Equal to PackOptions texelsPerUnit if texelsPerUnit > 0, otherwise an estimated value to match PackOptions resolution.
+		public FastColor* image;
+	}
+
 	// Input mesh declaration.
 	[StructLayout(LayoutKind.Sequential, Pack = 1)]
-	public unsafe struct XAtlas_MeshDecl {
+	unsafe struct XAtlas_MeshDecl {
 		public uint vertexCount;
 		public void* vertexPositionData;
 		public uint vertexPositionStride;
@@ -49,7 +90,7 @@ namespace MapFoam {
 	}
 
 	[StructLayout(LayoutKind.Sequential, Pack = 1)]
-	public struct ChartOptions {
+	struct ChartOptions {
 		public float maxChartArea; // Don't grow charts to be larger than this. 0 means no limit.
 		public float maxBoundaryLength; // Don't grow charts to have a longer boundary than this. 0 means no limit.
 
@@ -85,10 +126,10 @@ namespace MapFoam {
 	}
 
 	[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-	public unsafe delegate void ParameterizeFunc(float* positions, float* texcoords, uint vertexCount, uint* indices, uint indexCount);
+	unsafe delegate void ParameterizeFunc(float* positions, float* texcoords, uint vertexCount, uint* indices, uint indexCount);
 
 	[StructLayout(LayoutKind.Sequential, Pack = 1)]
-	public struct PackOptions {
+	struct PackOptions {
 		public bool bilinear;
 		public bool blockAlign;
 		public bool bruteForce;
@@ -108,7 +149,7 @@ namespace MapFoam {
 			Opt.blockAlign = false;
 
 			// Slower, but gives the best result. If false, use random chart placement.
-			Opt.bruteForce = false;
+			Opt.bruteForce = true;
 
 			// Create Atlas::image
 			Opt.createImage = false;
@@ -117,12 +158,12 @@ namespace MapFoam {
 			Opt.maxChartSize = 0;
 
 			// Number of pixels to pad charts with.
-			Opt.padding = 0;
+			Opt.padding = 10;
 
 			// Unit to texel scale. e.g. a 1x1 quad with texelsPerUnit of 32 will take up approximately 32x32 texels in the atlas.
 			// If 0, an estimated value will be calculated to approximately match the given resolution.
 			// If resolution is also 0, the estimated value will approximately match a 1024x1024 atlas.
-			Opt.texelsPerUnit = 0.0f;
+			Opt.texelsPerUnit = 0;
 
 			// If 0, generate a single atlas with texelsPerUnit determining the final resolution.
 			// If not 0, and texelsPerUnit is not 0, generate one or more atlases with that exact resolution.
@@ -133,17 +174,17 @@ namespace MapFoam {
 		}
 	};
 
-	public static unsafe class XAtlas {
+	static unsafe class XAtlas {
 		const string DllName = "xatlas";
 		const CallingConvention CConv = CallingConvention.Cdecl;
 
 		[DllImport(DllName, CallingConvention = CConv)]
-		public static extern IntPtr Create();
+		public static extern AtlasStruct* Create();
 
 		[DllImport(DllName, CallingConvention = CConv)]
-		public static extern int AddMesh(IntPtr Atlas, ref XAtlas_MeshDecl MeshDecl, uint MeshCountHit = 0);
+		public static extern int AddMesh(AtlasStruct* Atlas, ref XAtlas_MeshDecl MeshDecl, uint MeshCountHit = 0);
 
 		[DllImport(DllName, CallingConvention = CConv)]
-		public static extern void Generate(IntPtr atlas, ChartOptions chartOptions, ParameterizeFunc paramFunc, PackOptions packOptions);
+		public static extern void Generate(AtlasStruct* atlas, ChartOptions chartOptions, ParameterizeFunc paramFunc, PackOptions packOptions);
 	}
 }

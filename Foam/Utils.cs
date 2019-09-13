@@ -173,12 +173,24 @@ namespace Foam {
 			return new Vector2((int)Math.Round(V.X), (int)Math.Round(V.Y));
 		}
 
+		public static Vector2 Floor(Vector2 V) {
+			return new Vector2((int)Math.Floor(V.X), (int)Math.Floor(V.Y));
+		}
+
 		public static Vector2 Min(Vector2 A, Vector2 B) {
 			return new Vector2(Math.Min(A.X, B.X), Math.Min(A.Y, B.Y));
 		}
 
 		public static Vector2 Max(Vector2 A, Vector2 B) {
 			return new Vector2(Math.Max(A.X, B.X), Math.Max(A.Y, B.Y));
+		}
+
+		public static Vector3 Min(Vector3 A, Vector3 B) {
+			return new Vector3(Math.Min(A.X, B.X), Math.Min(A.Y, B.Y), Math.Min(A.Z, B.Z));
+		}
+
+		public static Vector3 Max(Vector3 A, Vector3 B) {
+			return new Vector3(Math.Max(A.X, B.X), Math.Max(A.Y, B.Y), Math.Max(A.Z, B.Z));
 		}
 
 		public static int GetOffset(this BinaryReader Reader) {
@@ -231,6 +243,14 @@ namespace Foam {
 			Matrix4x4 RotMat = Matrix4x4.CreateFromQuaternion(Rotate);
 			Matrix4x4 PosMat = Matrix4x4.CreateTranslation(Translate);
 			return RotMat * PosMat * SclMat;
+		}
+
+		public static Vector3 Clamp(Vector3 Val, Vector3 MinVal, Vector3 MaxVal) {
+			return Max(MinVal, Min(Val, MaxVal));
+		}
+
+		public static Vector3 Pow(Vector3 A, Vector3 B) {
+			return new Vector3((float)Math.Pow(A.X, B.X), (float)Math.Pow(A.Y, B.Y), (float)Math.Pow(A.Z, B.Z));
 		}
 
 		public static byte[] ReadBytes(byte* BytesPtr, int Len, bool Reverse = false) {

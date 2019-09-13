@@ -41,7 +41,11 @@ namespace Test {
 			Image Img = Raylib.LoadImage(FileName);
 
 			Texture2D Tex = Raylib.LoadTextureFromImage(Img);
+
 			//Raylib.GenTextureMipmaps(&Tex);
+			//Raylib.SetTextureFilter(Tex, TextureFilterMode.FILTER_ANISOTROPIC_16X);
+			//Raylib.SetTextureWrap(Tex, TextureWrapMode.WRAP_CLAMP);
+
 			Raylib.SetTextureFilter(Tex, TextureFilterMode.FILTER_POINT);
 			Raylib.SetTextureWrap(Tex, TextureWrapMode.WRAP_CLAMP);
 
@@ -186,7 +190,8 @@ namespace Test {
 					Matrix4x4 WorldTrans = Model.CalcWorldTransform(0, FrameIndex, Info.Bone1);
 					Vector3 Pos = Vector3.Transform(Vert.Position, BindWorld * WorldTrans);
 
-					Verts.Add(new Vertex3(Pos, new Vector2(Vert.UV.X, 1 - Vert.UV.Y)));
+					// TODO: Flip?
+					Verts.Add(new Vertex3(Pos, Vert.UV));
 				}
 
 				Mesh* RayMesh = ((Model)Msh.Userdata).meshes;
@@ -229,6 +234,8 @@ namespace Test {
 			Raylib.InitWindow(1366, 768, "Foam Test");
 			Raylib.SetTargetFPS(60);
 
+			args = new string[] { "C:/Projekti/Foam/bin/mapfoam/sample/test.mapfoam" };
+
 			Cam3D = new Camera3D(new Vector3(1, 1, 1), Vector3.Zero, Vector3.UnitY);
 			Raylib.SetCameraMode(Cam3D, CameraMode.CAMERA_FREE);
 
@@ -253,8 +260,15 @@ namespace Test {
 				if (Raylib.IsKeyPressed(KeyboardKey.KEY_F4))
 					UpdateAnimation = !UpdateAnimation;
 
-				if (Raylib.IsFileDropped()) {
-					string DroppedFile = Raylib.GetDroppedFiles()[0];
+				if (Raylib.IsFileDropped() || args != null) {
+					string DroppedFile = null;
+
+					if (args != null) {
+						DroppedFile = args[0];
+						args = null;
+					} else
+						DroppedFile = Raylib.GetDroppedFiles()[0];
+
 					Model[] NewModels = LoadModels(DroppedFile, out float Scale, out FoamModel NewFoamModel);
 
 					if (NewModels != null && NewFoamModel != null) {

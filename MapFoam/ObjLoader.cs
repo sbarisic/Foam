@@ -52,31 +52,44 @@ namespace MapFoam {
 			}
 		}
 
+		public static Vector3[] LoadRaw(string ObjFile) {
+			Vector3[] Verts = Load(ObjFile, null).Meshes.SelectMany(M => M.GetFlatVertices().Select(V => V.Position).ToArray()).ToArray();
 
+			HashSet<Vector3> UniqueVerts = new HashSet<Vector3>();
+
+			for (int i = 0; i < Verts.Length; i++)
+				if (!UniqueVerts.Contains(Verts[i]))
+					UniqueVerts.Add(Verts[i]);
+
+			return UniqueVerts.ToArray();
+		}
 
 		public static FoamModel Load(string ObjFile, string MtlFile) {
 			FoamMaterial[] Materials = new FoamMaterial[] { new FoamMaterial("default") };
 			ref FoamMaterial CurMat = ref Materials[0];
-			string[] MtlLines = File.ReadAllLines(MtlFile);
 
-			for (int i = 0; i < MtlLines.Length; i++) {
-				string Line = MtlLines[i].Trim().Replace('\t', ' ');
+			if (MtlFile != null) {
+				string[] MtlLines = File.ReadAllLines(MtlFile);
 
-				while (Line.Contains("  "))
-					Line = Line.Replace("  ", " ");
+				for (int i = 0; i < MtlLines.Length; i++) {
+					string Line = MtlLines[i].Trim().Replace('\t', ' ');
 
-				if (Line.StartsWith("#") || Line.Length == 0)
-					continue;
+					while (Line.Contains("  "))
+						Line = Line.Replace("  ", " ");
 
-				string[] Tokens = Line.Split(' ');
-				switch (Tokens[0].ToLower()) {
-					case "newmtl":
-						Utils.Append(ref Materials, new FoamMaterial(Tokens[1]));
-						CurMat = ref Materials[Materials.Length - 1];
-						break;
+					if (Line.StartsWith("#") || Line.Length == 0)
+						continue;
 
-					default:
-						break;
+					string[] Tokens = Line.Split(' ');
+					switch (Tokens[0].ToLower()) {
+						case "newmtl":
+							Utils.Append(ref Materials, new FoamMaterial(Tokens[1]));
+							CurMat = ref Materials[Materials.Length - 1];
+							break;
+
+						default:
+							break;
+					}
 				}
 			}
 
