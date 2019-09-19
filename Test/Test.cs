@@ -3,12 +3,18 @@ using RaylibSharp;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Color = RaylibSharp.Color;
+using Image = RaylibSharp.Image;
+using NetImage = System.Drawing.Image;
 
 namespace Test {
 	unsafe class Program {
@@ -16,7 +22,20 @@ namespace Test {
 		static string[] ImgExtensions = new string[] { ".png", ".tga", ".jpg" };
 
 		static Vertex3 ToVert3(FoamVertex3 V) {
-			return new Vertex3(V.Position, V.UV);
+			return new Vertex3(V.Position, new Vector2(V.UV2.X, 1.0f - V.UV2.Y));
+		}
+
+		static Texture2D LoadTexture(Image Img) {
+			Texture2D Tex = Raylib.LoadTextureFromImage(Img);
+
+			//Raylib.GenTextureMipmaps(&Tex);
+			//Raylib.SetTextureFilter(Tex, TextureFilterMode.FILTER_ANISOTROPIC_16X);
+			//Raylib.SetTextureWrap(Tex, TextureWrapMode.WRAP_CLAMP);
+
+			Raylib.SetTextureFilter(Tex, TextureFilterMode.FILTER_POINT);
+			Raylib.SetTextureWrap(Tex, TextureWrapMode.WRAP_CLAMP);
+
+			return Tex;
 		}
 
 		static Texture2D LoadTexture(string FileName) {
@@ -37,19 +56,39 @@ namespace Test {
 				FileName = "data/missing.png";
 			}
 
-
 			Image Img = Raylib.LoadImage(FileName);
+			return LoadTexture(Img);
+		}
 
-			Texture2D Tex = Raylib.LoadTextureFromImage(Img);
+		static Texture2D LoadTexture(FoamExtension Ext) {
+			using (MemoryStream MS = new MemoryStream(Ext.Data)) {
+				MS.Seek(0, SeekOrigin.Begin);
 
-			//Raylib.GenTextureMipmaps(&Tex);
-			//Raylib.SetTextureFilter(Tex, TextureFilterMode.FILTER_ANISOTROPIC_16X);
-			//Raylib.SetTextureWrap(Tex, TextureWrapMode.WRAP_CLAMP);
+				using (Bitmap Bmp = new Bitmap(NetImage.FromStream(MS))) {
+					BitmapData Data = Bmp.LockBits(new System.Drawing.Rectangle(0, 0, Bmp.Width, Bmp.Height), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+					uint* OrigColors = (uint*)Data.Scan0;
 
-			Raylib.SetTextureFilter(Tex, TextureFilterMode.FILTER_POINT);
-			Raylib.SetTextureWrap(Tex, TextureWrapMode.WRAP_CLAMP);
+					int Len = Bmp.Width * Bmp.Height;
+					uint* Colors = (uint*)Marshal.AllocHGlobal(Len * sizeof(uint));
 
-			return Tex;
+					for (int i = 0; i < Len; i++) {
+						uint Orig = OrigColors[i];
+
+						byte R = (byte)((Orig >> 16) & 255);
+						byte G = (byte)((Orig >> 8) & 255);
+						byte B = (byte)((Orig >> 0) & 255);
+						byte A = (byte)((Orig >> 24) & 255);
+
+						Colors[i] = (uint)((R << 0) | (G << 8) | (B << 16) | (A << 24));
+					}
+
+					Image Img = Raylib.LoadImagePro(new IntPtr(Colors), Bmp.Width, Bmp.Height, (int)RaylibSharp.PixelFormat.UNCOMPRESSED_R8G8B8A8);
+					Marshal.FreeHGlobal(new IntPtr(Colors));
+					
+					Bmp.UnlockBits(Data);
+					return LoadTexture(Img);
+				}
+			}
 		}
 
 		static void SetTexture(Model Mdl, Texture2D Tex) {
@@ -68,6 +107,18 @@ namespace Test {
 			// Mdl.transform = Matrix4x4.CreateFromYawPitchRoll(0, Pi / 2, 0);
 
 			Mesh.Userdata = Mdl;
+
+			foreach (var Ext in FoamModel.Extensions) {
+				if (Ext.Name.Contains("lightmap")) {
+					Texture2D LightmapTex = LoadTexture(Ext);
+
+					for (int i = 0; i < FoamModel.Materials.Length; i++) {
+						if (FoamModel.Materials[i].FindTexture(FoamTextureType.LightMap, out FoamTexture LightTex))
+							SetTexture(Mdl, LightmapTex);
+					}
+					break;
+				}
+			}
 
 			if (FoamModel.Materials[Mesh.MaterialIndex].FindTexture(FoamTextureType.Diffuse, out FoamTexture Tex))
 				SetTexture(Mdl, Path.Combine(RootDir, Tex.Name));
@@ -234,7 +285,8 @@ namespace Test {
 			Raylib.InitWindow(1366, 768, "Foam Test");
 			Raylib.SetTargetFPS(60);
 
-			args = new string[] { "C:/Projekti/Foam/bin/mapfoam/sample/test.mapfoam" };
+			//args = new string[] { "C:/Projekti/Foam/bin/mapfoam/sample/test.mapfoam" };
+			//args = new[] { "C:/Projekti/Ray/build/bin/sample/light_test.mapfoam" };
 
 			Cam3D = new Camera3D(new Vector3(1, 1, 1), Vector3.Zero, Vector3.UnitY);
 			Raylib.SetCameraMode(Cam3D, CameraMode.CAMERA_FREE);
@@ -260,10 +312,10 @@ namespace Test {
 				if (Raylib.IsKeyPressed(KeyboardKey.KEY_F4))
 					UpdateAnimation = !UpdateAnimation;
 
-				if (Raylib.IsFileDropped() || args != null) {
+				if (Raylib.IsFileDropped() || (args != null && args.Length > 0)) {
 					string DroppedFile = null;
 
-					if (args != null) {
+					if (args != null && args.Length > 0) {
 						DroppedFile = args[0];
 						args = null;
 					} else
@@ -297,6 +349,7 @@ namespace Test {
 
 				Raylib.BeginDrawing();
 				Raylib.ClearBackground(new Color(50, 50, 50));
+				//Raylib.ClearBackground(new Color(0, 0, 0));
 
 				if (Models != null) {
 					Raylib.UpdateCamera(ref Cam3D);

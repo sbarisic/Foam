@@ -193,6 +193,14 @@ namespace Foam {
 			return new Vector3(Math.Max(A.X, B.X), Math.Max(A.Y, B.Y), Math.Max(A.Z, B.Z));
 		}
 
+		public static Vector4 Min(Vector4 A, Vector4 B) {
+			return new Vector4(Math.Min(A.X, B.X), Math.Min(A.Y, B.Y), Math.Min(A.Z, B.Z), Math.Min(A.W, B.W));
+		}
+
+		public static Vector4 Max(Vector4 A, Vector4 B) {
+			return new Vector4(Math.Max(A.X, B.X), Math.Max(A.Y, B.Y), Math.Max(A.Z, B.Z), Math.Max(A.W, B.W));
+		}
+
 		public static int GetOffset(this BinaryReader Reader) {
 			return (int)Reader.BaseStream.Position;
 		}
@@ -249,6 +257,10 @@ namespace Foam {
 			return Max(MinVal, Min(Val, MaxVal));
 		}
 
+		public static Vector4 Clamp(Vector4 Val, Vector4 MinVal, Vector4 MaxVal) {
+			return Max(MinVal, Min(Val, MaxVal));
+		}
+
 		public static Vector3 Pow(Vector3 A, Vector3 B) {
 			return new Vector3((float)Math.Pow(A.X, B.X), (float)Math.Pow(A.Y, B.Y), (float)Math.Pow(A.Z, B.Z));
 		}
@@ -263,6 +275,10 @@ namespace Foam {
 				Bytes = Bytes.Reverse().ToArray();
 
 			return Bytes;
+		}
+
+		public static uint RotateLeft(uint Val, byte Amt) {
+			return (Val << Amt) | (Val >> (32 - Amt));
 		}
 	}
 }

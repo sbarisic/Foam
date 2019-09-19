@@ -11,22 +11,20 @@ namespace MapFoam {
 		public int Width;
 		public int Height;
 		public FastBitmap Atlas;
-		public FoamMesh Mesh;
 
 		Vector3?[] Pos;
 		Vector3[] Normals;
 
-		public MeshAtlasMap(int Width, int Height, FastBitmap Atlas, FoamMesh Mesh) {
+		public MeshAtlasMap(int Width, int Height, FastBitmap Atlas) {
 			this.Width = Width;
 			this.Height = Height;
 			this.Atlas = Atlas;
-			this.Mesh = Mesh;
 
 			Pos = new Vector3?[Width * Height];
 			Normals = new Vector3[Width * Height];
 		}
 
-		public MeshAtlasMap(int Width, int Height, FoamMesh Mesh) : this(Width, Height, new FastBitmap(Width, Height), Mesh) {
+		public MeshAtlasMap(int Width, int Height) : this(Width, Height, new FastBitmap(Width, Height)) {
 		}
 
 		public bool TryGet(int X, int Y, out Vector3 WorldPos, out Vector3 Normal) {

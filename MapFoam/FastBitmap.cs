@@ -150,10 +150,21 @@ namespace MapFoam {
 			LockData();
 		}
 
+		public void FlipY() {
+			UnlockData();
+			Internal.RotateFlip(RotateFlipType.RotateNoneFlipY);
+			LockData();
+		}
+
 		public void Save(string FileName) {
 			UnlockData();
 			Internal.Save(FileName);
 			LockData();
+		}
+
+		public Image GetImage() {
+			UnlockData();
+			return Internal;
 		}
 
 		public FastBitmap Extend() {

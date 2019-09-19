@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -280,6 +282,16 @@ namespace Foam {
 			return Verts.ToArray();
 		}
 
+		public void CalcMinMax(out Vector3 Min, out Vector3 Max) {
+			Min = new Vector3(float.PositiveInfinity);
+			Max = new Vector3(float.NegativeInfinity);
+
+			for (int i = 0; i < Vertices.Length; i++) {
+				Min = Utils.Min(Min, Vertices[i].Position);
+				Max = Utils.Max(Max, Vertices[i].Position);
+			}
+		}
+
 		public void CalcBounds(out Vector3 Min, out Vector3 Max) {
 			Min = new Vector3(float.PositiveInfinity);
 			Max = new Vector3(float.NegativeInfinity);
@@ -397,6 +409,13 @@ namespace Foam {
 
 		public override string ToString() {
 			return Name;
+		}
+
+		public static FoamExtension CreateEmbeddedPng(string Name, Image Img) {
+			using (MemoryStream MS = new MemoryStream()) {
+				Img.Save(MS, ImageFormat.Png);
+				return new FoamExtension("file:" + Name, MS.ToArray());
+			}
 		}
 	}
 

@@ -1,1 +1,6 @@
 newmtl base/base1
+newmtl base/emissive_blue
+newmtl base/emissive_green
+newmtl base/emissive_red
+newmtl base/emissive_sky
+newmtl base/emissive_white

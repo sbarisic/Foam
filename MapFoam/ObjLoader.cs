@@ -1,6 +1,7 @@
 ﻿using Foam;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -162,6 +163,60 @@ namespace MapFoam {
 			}
 
 			return new FoamModel(Path.GetFileNameWithoutExtension(ObjFile), FoamFlags.Level, Meshes.Select(M => M.ToFoamMesh(Materials)).ToArray(), null, null, Materials.ToArray());
+		}
+
+		public static void Save(FoamModel Mdl, string Pth, bool ExportMaterials = false) {
+			string RootDir = Path.GetDirectoryName(Path.GetFullPath(Pth));
+			string FileName = Path.GetFileNameWithoutExtension(Pth);
+
+			if (ExportMaterials)
+				File.WriteAllLines(Path.Combine(RootDir, FileName + ".mtl"), new[] { "newmtl atlas", "map_Ka atlas.png", "map_Kd atlas.png" });
+
+			List<string> Lines = new List<string>();
+
+			if (ExportMaterials)
+				Lines.Add("mtllib " + FileName + ".mtl");
+
+			List<int> Indices = new List<int>();
+
+
+			foreach (var M in Mdl.Meshes) {
+				foreach (var V in M.Vertices)
+					Lines.Add(string.Format(CultureInfo.InvariantCulture, "v {0} {1} {2}", V.Position.X, V.Position.Y, V.Position.Z));
+			}
+
+			foreach (var M in Mdl.Meshes) {
+				foreach (var V in M.Vertices)
+					Lines.Add(string.Format(CultureInfo.InvariantCulture, "vn {0} {1} {2}", V.Normal.X, V.Normal.Y, V.Normal.Z));
+			}
+
+			foreach (var M in Mdl.Meshes) {
+				foreach (var V in M.Vertices)
+					Lines.Add(string.Format(CultureInfo.InvariantCulture, "vt {0} {1}", V.UV2.X, V.UV2.Y));
+			}
+
+			int LastVertexCount = 0;
+			int ObjIdx = 0;
+
+			if (ExportMaterials)
+				Lines.Add("usemtl atlas");
+
+			foreach (var M in Mdl.Meshes) {
+				if (ExportMaterials)
+					Lines.Add("o obj" + (ObjIdx++));
+
+				for (int i = 0; i < M.Indices.Length; i += 3) {
+					int I0 = M.Indices[i + 0] + 1 + LastVertexCount;
+					int I1 = M.Indices[i + 1] + 1 + LastVertexCount;
+					int I2 = M.Indices[i + 2] + 1 + LastVertexCount;
+
+					Lines.Add(string.Format(CultureInfo.InvariantCulture, "f {0}/{0}/{0} {1}/{1}/{1} {2}/{2}/{2}", I0, I1, I2));
+				}
+
+				LastVertexCount = M.Vertices.Length;
+			}
+
+			File.WriteAllLines(Pth, Lines.ToArray());
 		}
 	}
 }
